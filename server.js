@@ -103,4 +103,71 @@ app.post('/api/loans/apply', authenticate, async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Cooperative API running on port ${PORT}`));
-    
+// ACCOUNT ACTIVATION (First-Time Users)
+app.post('/api/auth/activate', async (req, res) => {
+  const { phone, password } = req.body;
+
+  if (!phone || !password) {
+    return res.status(400).json({ error: 'Phone number and password are required.' });
+  }
+
+  try {
+    const { data: member, error: findError } = await supabase
+      .from('members')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+
+    if (findError || !member) {
+      return res.status(404).json({ error: 'Phone number not found in member registry.' });
+    }
+
+    const { error: updateError } = await supabase
+      .from('members')
+      .update({ password: password })
+      .eq('phone', phone);
+
+    if (updateError) {
+      return res.status(500).json({ error: 'Failed to set password in database.' });
+    }
+
+    return res.status(200).json({ message: 'Account activated successfully!' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Server error during activation.' });
+  }
+});
+
+// FORGOT / RESET PASSWORD
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { phone, newPassword } = req.body;
+
+  if (!phone || !newPassword) {
+    return res.status(400).json({ error: 'Phone and new password are required.' });
+  }
+
+  try {
+    const { data: member, error: findError } = await supabase
+      .from('members')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+
+    if (findError || !member) {
+      return res.status(404).json({ error: 'Registered phone number not found.' });
+    }
+
+    const { error: updateError } = await supabase
+      .from('members')
+      .update({ password: newPassword })
+      .eq('phone', phone);
+
+    if (updateError) {
+      return res.status(500).json({ error: 'Failed to update password.' });
+    }
+
+    return res.status(200).json({ message: 'Password updated successfully!' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Server error during password reset.' });
+  }
+});
+
