@@ -2,123 +2,550 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Executive Accounting Portal</title>
-  <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-    .card { background: #1e293b; border-radius: 12px; padding: 24px; max-width: 500px; margin: 40px auto; border: 1px solid #334155; }
-    h2 { margin-top: 0; color: #38bdf8; text-align: center; }
-    label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
-    input { width: 100%; padding: 12px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 16px; }
-    button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #0284c7; color: white; font-size: 16px; font-weight: bold; cursor: pointer; }
-    button:hover { background: #0369a1; }
-    .hidden { display: none; }
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
-    .stat-box { background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid #334155; }
-    .stat-title { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
-    .stat-value { font-size: 20px; font-weight: bold; color: #38bdf8; margin-top: 4px; }
-    .error { color: #f87171; font-size: 14px; margin-top: 8px; text-align: center; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#16a34a">
+  <title>Dynamic Teachers' MPCS LTD</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-slate-100 font-sans antialiased text-slate-800 selection:bg-green-500 selection:text-white">
 
-  <!-- 1. LOGIN SECTION -->
-  <div id="loginSection" class="card">
-    <h2>Executive Access</h2>
-    <label for="phone">Enter Registered Phone Number</label>
-    <input type="tel" id="phone" placeholder="e.g. 09051004353" required>
-    <button onclick="handleLogin()">Sign In</button>
-    <div id="loginError" class="error"></div>
-  </div>
+  <div id="app" class="max-w-md mx-auto min-h-screen bg-white shadow-xl relative flex flex-col pb-10">
 
-  <!-- 2. EXECUTIVE DASHBOARD -->
-  <div id="dashboardSection" class="card hidden" style="max-width: 800px;">
-    <h2>Statutory Financial Portal</h2>
-    <p id="welcomeMsg" style="text-align: center; color: #94a3b8;"></p>
-    
-    <div id="adminPanel" class="hidden">
-      <h3>Executive Summary</h3>
-      <div class="stat-grid">
-        <div class="stat-box">
-          <div class="stat-title">Journal Records</div>
-          <div id="journalCount" class="stat-value">0</div>
+    <!-- HEADER -->
+    <header class="bg-green-700 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-10">
+      <div class="flex items-center space-x-2 overflow-hidden">
+        <i class="fa-solid fa-building-columns text-xl shrink-0"></i>
+        <h1 class="font-bold text-sm sm:text-base truncate" id="header-title">Dynamic Teachers' MPCS LTD</h1>
+      </div>
+      <button id="logout-btn" onclick="logout()" class="hidden text-xs bg-green-800 hover:bg-green-900 px-3 py-1.5 rounded-lg border border-green-600 transition shrink-0">
+        Logout
+      </button>
+    </header>
+
+    <!-- NOTIFICATION BAR -->
+    <div id="alert-box" class="hidden p-3 text-sm text-center font-medium text-white"></div>
+
+    <!-- 1. LOGIN VIEW -->
+    <div id="login-view" class="p-6 flex-1 flex flex-col justify-center">
+      <div class="text-center mb-6">
+        <div class="w-20 h-20 mx-auto mb-3 rounded-full bg-white shadow-md flex items-center justify-center p-2 border border-gray-100 overflow-hidden">
+          <img src="logo.jpg" alt="Dynamic Teachers' MPCS LTD Logo" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-building-columns text-4xl text-green-700\'></i>';">
         </div>
-        <div class="stat-box">
-          <div class="stat-title">Fixed Assets</div>
-          <div id="assetCount" class="stat-value">0</div>
+        <h2 class="text-xl font-extrabold text-slate-900">Dynamic Teachers' MPCS LTD</h2>
+        <p class="text-xs text-green-700 font-semibold mt-1">Sapele • Member & Executive Portal</p>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Phone Number</label>
+          <div class="relative">
+            <i class="fa-solid fa-phone absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+            <input type="tel" id="login-phone" required placeholder="08012345678" class="w-full pl-9 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none text-sm bg-slate-50">
+          </div>
         </div>
-        <div class="stat-box">
-          <div class="stat-title">Investments</div>
-          <div id="investmentCount" class="stat-value">0</div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-semibold uppercase text-slate-600">Password</label>
+            <button type="button" onclick="showScreen('reset-view')" class="text-[11px] text-green-700 hover:underline font-semibold">Forgot?</button>
+          </div>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+            <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-9 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none text-sm bg-slate-50">
+          </div>
         </div>
-        <div class="stat-box">
-          <div class="stat-title">Appropriations</div>
-          <div id="appropriationCount" class="stat-value">0</div>
+
+        <button type="submit" id="login-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition">
+          LOGIN TO PORTAL
+        </button>
+      </form>
+
+      <div class="mt-6 text-center border-t pt-4">
+        <p class="text-xs text-slate-500">First time here or need to set a password?</p>
+        <button onclick="showScreen('activate-view')" class="mt-2 text-xs font-bold text-green-700 border border-green-600 px-4 py-2 rounded-lg hover:bg-green-50 transition w-full">
+          ACTIVATE MEMBER ACCOUNT
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. ACCOUNT ACTIVATION VIEW -->
+    <div id="activate-view" class="hidden p-6 flex-1 flex flex-col justify-center">
+      <div class="flex items-center justify-between border-b pb-3 mb-6">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-user-plus text-green-600"></i> Account Activation
+        </h3>
+        <button onclick="showScreen('login-view')" class="text-xs text-green-700 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-arrow-left"></i> Back
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500 mb-4">Enter your registered phone number to set up your passbook password for the first time.</p>
+
+      <form onsubmit="handleActivate(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Registered Phone Number</label>
+          <input type="tel" id="act-phone" required placeholder="08012345678" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-green-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Create Password</label>
+          <input type="password" id="act-password" required placeholder="At least 6 characters" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-green-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Confirm Password</label>
+          <input type="password" id="act-confirm" required placeholder="Re-enter password" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-green-600 outline-none">
+        </div>
+
+        <button type="submit" id="act-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition">
+          SET PASSWORD & ACTIVATE
+        </button>
+      </form>
+    </div>
+
+    <!-- 3. RESET PASSWORD VIEW -->
+    <div id="reset-view" class="hidden p-6 flex-1 flex flex-col justify-center">
+      <div class="flex items-center justify-between border-b pb-3 mb-6">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-key text-green-600"></i> Reset Password
+        </h3>
+        <button onclick="showScreen('login-view')" class="text-xs text-green-700 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-arrow-left"></i> Back
+        </button>
+      </div>
+
+      <form onsubmit="handleReset(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Registered Phone Number</label>
+          <input type="tel" id="reset-phone" required placeholder="08012345678" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-green-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">New Password</label>
+          <input type="password" id="reset-password" required placeholder="New password" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-green-600 outline-none">
+        </div>
+
+        <button type="submit" id="reset-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition">
+          UPDATE PASSWORD
+        </button>
+      </form>
+    </div>
+
+    <!-- 4. DASHBOARD VIEW -->
+    <div id="dashboard-view" class="hidden p-4 space-y-4 flex-1">
+      <div class="bg-gradient-to-r from-green-800 to-green-600 text-white p-4 rounded-xl shadow">
+        <p class="text-xs text-green-200" id="portal-role-badge">Member Passbook</p>
+        <h2 id="member-name" class="text-xl font-bold">Member Name</h2>
+      </div>
+
+      <!-- MEMBER BALANCES -->
+      <div class="space-y-3">
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl shadow-sm border-l-4 border-l-blue-600">
+          <p class="text-xs font-medium text-slate-500 uppercase">Total Savings</p>
+          <p id="savings-bal" class="text-2xl font-bold text-blue-700 mt-1">₦0.00</p>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl shadow-sm border-l-4 border-l-teal-600">
+          <p class="text-xs font-medium text-slate-500 uppercase">Share Capital</p>
+          <p id="share-bal" class="text-2xl font-bold text-teal-700 mt-1">₦0.00</p>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl shadow-sm border-l-4 border-l-amber-600">
+          <p class="text-xs font-medium text-slate-500 uppercase">Outstanding Loan</p>
+          <p id="loan-bal" class="text-2xl font-bold text-amber-700 mt-1">₦0.00</p>
+        </div>
+      </div>
+
+      <!-- MEMBER ACTIONS -->
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <button onclick="showScreen('passbook-view')" class="bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl font-semibold text-sm shadow flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-receipt"></i>
+          <span>Passbook</span>
+        </button>
+
+        <button onclick="showScreen('loan-view')" class="bg-emerald-800 hover:bg-emerald-900 text-white p-3 rounded-xl font-semibold text-sm shadow flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+          <span>Apply Loan</span>
+        </button>
+      </div>
+
+      <!-- EXECUTIVE / ADMIN STATUTORY PANEL (VISIBLE ONLY TO ADMINS) -->
+      <div id="executive-panel" class="hidden border-t pt-4 mt-6">
+        <h3 class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-chart-line text-green-700"></i> Executive Statutory Reporting
+        </h3>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button onclick="fetchExecutiveReport('trial-balance')" class="p-3 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 text-left">
+            <i class="fa-solid fa-scale-balanced mb-1 block text-green-400"></i> Trial Balance
+          </button>
+          <button onclick="fetchExecutiveReport('income-expenditure')" class="p-3 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 text-left">
+            <i class="fa-solid fa-calculator mb-1 block text-green-400"></i> Income & Exp.
+          </button>
+          <button onclick="fetchExecutiveReport('balance-sheet')" class="p-3 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 text-left">
+            <i class="fa-solid fa-building-columns mb-1 block text-green-400"></i> Balance Sheet
+          </button>
+          <button onclick="showScreen('ledger-search-view')" class="p-3 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 text-left">
+            <i class="fa-solid fa-users-viewfinder mb-1 block text-green-400"></i> Member Ledgers
+          </button>
         </div>
       </div>
     </div>
-    
-    <button onclick="location.reload()" style="margin-top: 24px; background: #334155;">Sign Out</button>
+
+    <!-- 5. PASSBOOK VIEW -->
+    <div id="passbook-view" class="hidden p-4 space-y-4 flex-1">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-list-check text-green-600"></i> Passbook History
+        </h3>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-green-700 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-arrow-left"></i> Back
+        </button>
+      </div>
+
+      <div id="tx-container" class="space-y-2">
+        <p class="text-center text-slate-400 text-sm py-8">Loading history...</p>
+      </div>
+    </div>
+
+    <!-- 6. LOAN APPLICATION VIEW -->
+    <div id="loan-view" class="hidden p-4 space-y-4 flex-1">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-file-invoice-dollar text-green-600"></i> Loan Request
+        </h3>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-green-700 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-arrow-left"></i> Back
+        </button>
+      </div>
+
+      <form onsubmit="handleLoanApply(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-600">Amount Required (₦)</label>
+          <input type="number" id="loan-amount" required placeholder="50000" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-green-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600">Tenor (Months)</label>
+          <input type="number" id="loan-tenor" required value="12" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-green-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600">Purpose of Loan</label>
+          <input type="text" id="loan-purpose" required placeholder="e.g. Personal Project" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-green-600 outline-none">
+        </div>
+
+        <button type="submit" id="loan-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow mt-2">
+          SUBMIT APPLICATION
+        </button>
+      </form>
+    </div>
+
+    <!-- 7. MEMBER LEDGER SEARCH (ADMIN ONLY) -->
+    <div id="ledger-search-view" class="hidden p-4 space-y-4 flex-1">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-users-viewfinder text-green-600"></i> Member Ledger Search
+        </h3>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-green-700 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-arrow-left"></i> Back
+        </button>
+      </div>
+
+      <div class="flex gap-2">
+        <input type="text" id="member-search-input" placeholder="Search phone or name..." class="flex-1 p-2.5 border rounded-lg text-sm bg-slate-50">
+        <button onclick="searchMemberLedger()" class="bg-green-700 text-white px-4 py-2.5 rounded-lg text-xs font-bold">Search</button>
+      </div>
+
+      <div id="ledger-results" class="space-y-2 pt-2"></div>
+    </div>
+
   </div>
 
   <script>
-    const API_URL = 'https://coop-backend-api.onrender.com';
+    const API_BASE = 'https://coop-backend-api.onrender.com/api';
+    let authToken = localStorage.getItem('coop_token') || null;
+    let memberData = JSON.parse(localStorage.getItem('coop_member') || '{}');
 
-    async function handleLogin() {
-      const phone = document.getElementById('phone').value.trim();
-      const errDiv = document.getElementById('loginError');
-      errDiv.innerText = '';
-
-      if (!phone) {
-        errDiv.innerText = 'Please enter your phone number.';
-        return;
+    window.onload = () => {
+      if (authToken && memberData.phone) {
+        loadDashboard();
       }
+    };
+
+    function showAlert(msg, isError = false) {
+      const box = document.getElementById('alert-box');
+      box.innerText = msg;
+      box.className = `p-3 text-sm text-center font-medium text-white ${isError ? 'bg-red-600' : 'bg-green-600'}`;
+      box.classList.remove('hidden');
+      setTimeout(() => box.classList.add('hidden'), 4500);
+    }
+
+    function showScreen(screenId) {
+      ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'passbook-view', 'loan-view', 'ledger-search-view'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(screenId).classList.remove('hidden');
+      
+      if (screenId === 'passbook-view') fetchTransactions();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      btn.innerText = 'Authenticating...';
+      btn.disabled = true;
 
       try {
-        const res = await fetch(`${API_URL}/api/login`, {
+        const res = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone })
+          body: JSON.stringify({
+            phone: document.getElementById('login-phone').value.trim(),
+            password: document.getElementById('login-password').value.trim()
+          })
         });
 
         const data = await res.json();
-
-        if (!res.ok) {
-          errDiv.innerText = data.error || 'Login failed';
-          return;
-        }
-
-        // Hide login, show dashboard
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('dashboardSection').classList.remove('hidden');
-        document.getElementById('welcomeMsg').innerText = `Welcome, ${data.member.full_name} (${data.member.role.toUpperCase()})`;
-
-        if (data.member.role === 'admin') {
-          document.getElementById('adminPanel').classList.remove('hidden');
-          loadExecutiveReport(phone);
+        if (res.ok) {
+          authToken = data.token;
+          memberData = data.member;
+          localStorage.setItem('coop_token', authToken);
+          localStorage.setItem('coop_member', JSON.stringify(memberData));
+          loadDashboard();
+        } else {
+          showAlert(data.error || 'Login failed. Verify phone & password.', true);
         }
       } catch (err) {
-        errDiv.innerText = 'Unable to connect to service server.';
+        showAlert('Connecting to server... Please wait 30s if server is sleeping.', true);
+      } finally {
+        btn.innerText = 'LOGIN TO PORTAL';
+        btn.disabled = false;
       }
     }
 
-    async function loadExecutiveReport(userPhone) {
-      try {
-        const res = await fetch(`${API_URL}/api/reports/statutory`, {
-          headers: { 'x-user-phone': userPhone }
-        });
-        const report = await res.json();
+    async function handleActivate(e) {
+      e.preventDefault();
+      const phone = document.getElementById('act-phone').value.trim();
+      const pass = document.getElementById('act-password').value.trim();
+      const confirm = document.getElementById('act-confirm').value.trim();
 
-        if (report.success) {
-          document.getElementById('journalCount').innerText = report.data.journalSummary.length;
-          document.getElementById('assetCount').innerText = report.data.fixedAssets.length;
-          document.getElementById('investmentCount').innerText = report.data.investments.length;
-          document.getElementById('appropriationCount').innerText = report.data.appropriations.length;
+      if (pass !== confirm) {
+        showAlert('Passwords do not match', true);
+        return;
+      }
+
+      const btn = document.getElementById('act-btn');
+      btn.innerText = 'Activating...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/activate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password: pass })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('Account activated successfully! Please log in.');
+          showScreen('login-view');
+        } else {
+          showAlert(data.error || 'Activation failed. Phone number not found.', true);
         }
       } catch (err) {
-        console.error('Failed loading statutory financial reports', err);
+        showAlert('Network error. Retry in a moment.', true);
+      } finally {
+        btn.innerText = 'SET PASSWORD & ACTIVATE';
+        btn.disabled = false;
       }
+    }
+
+    async function handleReset(e) {
+      e.preventDefault();
+      const phone = document.getElementById('reset-phone').value.trim();
+      const pass = document.getElementById('reset-password').value.trim();
+
+      const btn = document.getElementById('reset-btn');
+      btn.innerText = 'Updating...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, newPassword: pass })
+        });
+
+        if (res.ok) {
+          showAlert('Password updated successfully! Please log in.');
+          showScreen('login-view');
+        } else {
+          showAlert('Password reset failed. Check registered phone.', true);
+        }
+      } catch (err) {
+        showAlert('Network error. Retry in a moment.', true);
+      } finally {
+        btn.innerText = 'UPDATE PASSWORD';
+        btn.disabled = false;
+      }
+    }
+
+    async function loadDashboard() {
+      document.getElementById('member-name').innerText = memberData.name || 'Member';
+      document.getElementById('logout-btn').classList.remove('hidden');
+
+      if (memberData.role === 'ADMIN' || memberData.is_admin) {
+        document.getElementById('portal-role-badge').innerText = 'Executive Portal (ADMIN)';
+        document.getElementById('executive-panel').classList.remove('hidden');
+      } else {
+        document.getElementById('portal-role-badge').innerText = 'Member Passbook';
+        document.getElementById('executive-panel').classList.add('hidden');
+      }
+
+      showScreen('dashboard-view');
+
+      try {
+        const res = await fetch(`${API_BASE}/member/dashboard`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('savings-bal').innerText = `₦${Number(data.savings || 0).toLocaleString()}`;
+          document.getElementById('share-bal').innerText = `₦${Number(data.share_capital || 0).toLocaleString()}`;
+          document.getElementById('loan-bal').innerText = `₦${Number(data.loan_balance || 0).toLocaleString()}`;
+        }
+      } catch (e) {
+        console.log('Failed to refresh balances');
+      }
+    }
+
+    async function fetchTransactions() {
+      const container = document.getElementById('tx-container');
+      container.innerHTML = `<p class="text-center text-slate-400 text-sm py-8">Loading history...</p>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/member/transactions`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const transactions = await res.json();
+
+        if (res.ok && transactions.length > 0) {
+          container.innerHTML = transactions.map(tx => {
+            const isCredit = tx.type === 'CREDIT';
+            const date = tx.created_at ? tx.created_at.split('T')[0] : '';
+            return `
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div class="flex items-center space-x-3">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center ${isCredit ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">
+                    <i class="fa-solid ${isCredit ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs"></i>
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-800">${tx.description || tx.account_type}</p>
+                    <p class="text-[10px] text-slate-400">${date}</p>
+                  </div>
+                </div>
+                <p class="text-sm font-bold ${isCredit ? 'text-green-600' : 'text-red-600'}">
+                  ${isCredit ? '+' : '-'}₦${Number(tx.amount).toLocaleString()}
+                </p>
+              </div>
+            `;
+          }).join('');
+        } else {
+          container.innerHTML = `<p class="text-center text-slate-400 text-sm py-8">No transaction records found.</p>`;
+        }
+      } catch (e) {
+        container.innerHTML = `<p class="text-center text-red-500 text-sm py-8">Failed to load transactions.</p>`;
+      }
+    }
+
+    async function handleLoanApply(e) {
+      e.preventDefault();
+      const btn = document.getElementById('loan-btn');
+      btn.innerText = 'Submitting...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/loans/apply`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            amount: Number(document.getElementById('loan-amount').value),
+            tenor: Number(document.getElementById('loan-tenor').value),
+            purpose: document.getElementById('loan-purpose').value
+          })
+        });
+
+        if (res.ok) {
+          showAlert('Loan application submitted!');
+          showScreen('dashboard-view');
+        } else {
+          showAlert('Failed to submit application', true);
+        }
+      } catch (err) {
+        showAlert('Network error', true);
+      } finally {
+        btn.innerText = 'SUBMIT APPLICATION';
+        btn.disabled = false;
+      }
+    }
+
+    async function fetchExecutiveReport(reportType) {
+      showAlert(`Generating ${reportType.replace('-', ' ')}...`);
+      try {
+        const res = await fetch(`${API_BASE}/reports/${reportType}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const report = await res.json();
+        if (res.ok) {
+          showAlert(`${reportType.toUpperCase()} generated successfully.`);
+        } else {
+          showAlert('Report generation failed.', true);
+        }
+      } catch (err) {
+        showAlert('Failed to fetch statutory report.', true);
+      }
+    }
+
+    async function searchMemberLedger() {
+      const query = document.getElementById('member-search-input').value.trim();
+      if (!query) return;
+
+      const container = document.getElementById('ledger-results');
+      container.innerHTML = `<p class="text-xs text-slate-400">Searching...</p>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/members/search?q=${query}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const members = await res.json();
+        if (res.ok && members.length > 0) {
+          container.innerHTML = members.map(m => `
+            <div class="p-3 bg-slate-50 border rounded-lg text-xs flex justify-between items-center">
+              <div>
+                <p class="font-bold text-slate-800">${m.name}</p>
+                <p class="text-slate-500">${m.phone}</p>
+              </div>
+              <p class="font-bold text-green-700">₦${Number(m.savings || 0).toLocaleString()}</p>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `<p class="text-xs text-slate-400">No member records found.</p>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<p class="text-xs text-red-500">Search error.</p>`;
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      authToken = null;
+      document.getElementById('logout-btn').classList.add('hidden');
+      showScreen('login-view');
     }
   </script>
 </body>
