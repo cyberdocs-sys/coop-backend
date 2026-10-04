@@ -72,7 +72,7 @@
         <p id="member-acc-no" class="text-xs text-green-100 font-mono mt-0.5">Acc: -</p>
       </div>
 
-      <!-- PERSONAL LEDGER HEADS (6 HEADS) -->
+      <!-- PERSONAL LEDGER HEADS -->
       <div class="grid grid-cols-2 gap-2 text-xs">
         <div class="bg-slate-50 border p-3 rounded-xl border-l-4 border-l-blue-600">
           <p class="text-[10px] font-medium text-slate-500 uppercase">Thrift Savings</p>
@@ -100,26 +100,58 @@
         </div>
       </div>
 
-      <!-- EXECUTIVE SECRETARY CONTROL PANEL -->
+      <!-- EXECUTIVE STATUTORY REPORTING PANEL -->
       <div id="executive-panel" class="hidden border-t pt-4 mt-4 space-y-3">
         <h3 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-          <i class="fa-solid fa-user-shield text-green-700"></i> Secretary Management Tools
+          <i class="fa-solid fa-chart-line text-green-700"></i> Executive Statutory Reporting
         </h3>
+
+        <!-- 4 DEDICATED AGM REPORT BUTTONS -->
         <div class="grid grid-cols-2 gap-2 text-xs">
-          <button onclick="showScreen('post-member-view')" class="p-2.5 bg-green-700 text-white rounded-lg font-semibold text-center">
-            + Member Ledger Post
+          <button onclick="fetchExecutiveReport('trial-balance')" class="p-3 bg-slate-800 text-white rounded-lg font-semibold text-left shadow">
+            <i class="fa-solid fa-scale-balanced mb-1 block text-green-400"></i> Trial Balance
           </button>
-          <button onclick="showScreen('post-journal-view')" class="p-2.5 bg-slate-800 text-white rounded-lg font-semibold text-center">
-            + Income / Expense Entry
+          <button onclick="fetchExecutiveReport('income-expenditure')" class="p-3 bg-slate-800 text-white rounded-lg font-semibold text-left shadow">
+            <i class="fa-solid fa-calculator mb-1 block text-green-400"></i> Income & Exp. A/C
+          </button>
+          <button onclick="fetchExecutiveReport('appropriation')" class="p-3 bg-slate-800 text-white rounded-lg font-semibold text-left shadow">
+            <i class="fa-solid fa-pie-chart mb-1 block text-green-400"></i> Appropriation A/C
+          </button>
+          <button onclick="fetchExecutiveReport('balance-sheet')" class="p-3 bg-slate-800 text-white rounded-lg font-semibold text-left shadow">
+            <i class="fa-solid fa-building-columns mb-1 block text-green-400"></i> Balance Sheet
           </button>
         </div>
-        <button onclick="fetchAGMSummary()" class="w-full p-2.5 bg-slate-900 text-white rounded-lg font-semibold text-xs flex items-center justify-center gap-2">
-          <i class="fa-solid fa-file-invoice-dollar text-green-400"></i> Generate AGM Audit Financial Summary
+
+        <button onclick="showScreen('ledger-search-view')" class="w-full p-2.5 bg-slate-700 text-white rounded-lg font-semibold text-xs flex items-center justify-center gap-2">
+          <i class="fa-solid fa-users-viewfinder text-green-400"></i> Member Personal Ledger Registry
         </button>
+
+        <h4 class="font-bold text-slate-700 text-xs pt-2">Secretary Posting Tools</h4>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button onclick="showScreen('post-member-view')" class="p-2.5 bg-green-700 text-white rounded-lg font-semibold text-center">
+            + Post Member Entry
+          </button>
+          <button onclick="showScreen('post-journal-view')" class="p-2.5 bg-slate-800 text-white rounded-lg font-semibold text-center">
+            + Post Income / Expense
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- 4. POST MEMBER LEDGER VIEW -->
+    <!-- 4. MEMBER LEDGER SEARCH & REGISTRY VIEW -->
+    <div id="ledger-search-view" class="hidden p-4 space-y-4 flex-1">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-sm">Member Personal Ledger Registry</h3>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-green-700 font-semibold">Back</button>
+      </div>
+      <div class="flex gap-2">
+        <input type="text" id="member-search-input" placeholder="Search name, account no, phone..." class="flex-1 p-2.5 border rounded-lg text-sm">
+        <button onclick="searchMemberLedger()" class="bg-green-700 text-white px-4 py-2.5 rounded-lg text-xs font-bold">Search</button>
+      </div>
+      <div id="ledger-results" class="space-y-2 pt-2"></div>
+    </div>
+
+    <!-- 5. POST MEMBER LEDGER VIEW -->
     <div id="post-member-view" class="hidden p-4 space-y-4 flex-1">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-slate-800 text-sm">Post Member Ledger Transaction</h3>
@@ -145,7 +177,7 @@
       </form>
     </div>
 
-    <!-- 5. POST JOURNAL ENTRY VIEW -->
+    <!-- 6. POST JOURNAL ENTRY VIEW -->
     <div id="post-journal-view" class="hidden p-4 space-y-4 flex-1">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-slate-800 text-sm">Post Society Income / Expense</h3>
@@ -163,14 +195,14 @@
       </form>
     </div>
 
-    <!-- 6. AGM REPORT DISPLAY MODAL -->
+    <!-- 7. STATUTORY REPORT DISPLAY MODAL -->
     <div id="report-modal-view" class="hidden p-4 space-y-4 flex-1">
       <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="font-bold text-slate-800 text-sm">AGM Statutory Financial Summary</h3>
+        <h3 id="report-modal-title" class="font-bold text-slate-800 text-sm">Statutory Financial Statement</h3>
         <button onclick="showScreen('dashboard-view')" class="text-xs text-green-700 font-semibold">Back</button>
       </div>
-      <div id="report-modal-content" class="text-xs space-y-2 bg-slate-50 p-4 rounded-lg border"></div>
-      <button onclick="window.print()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-lg text-xs">PRINT FINANCIAL STATEMENT</button>
+      <div id="report-modal-content" class="text-xs space-y-3 bg-slate-50 p-4 rounded-lg border"></div>
+      <button onclick="window.print()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-lg text-xs">PRINT STATEMENT</button>
     </div>
 
   </div>
@@ -193,10 +225,11 @@
     }
 
     function showScreen(screenId) {
-      ['login-view', 'activate-view', 'dashboard-view', 'post-member-view', 'post-journal-view', 'report-modal-view'].forEach(id => {
+      ['login-view', 'activate-view', 'dashboard-view', 'ledger-search-view', 'post-member-view', 'post-journal-view', 'report-modal-view'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
       });
       document.getElementById(screenId).classList.remove('hidden');
+      if (screenId === 'ledger-search-view') searchMemberLedger();
     }
 
     async function handleLogin(e) {
@@ -279,6 +312,38 @@
       } catch (e) {}
     }
 
+    async function searchMemberLedger() {
+      const query = document.getElementById('member-search-input').value.trim();
+      const container = document.getElementById('ledger-results');
+      container.innerHTML = `<p class="text-xs text-slate-400">Loading register...</p>`;
+      try {
+        const res = await fetch(`${API_BASE}/admin/members/search?q=${query}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const members = await res.json();
+        if (res.ok && members.length > 0) {
+          container.innerHTML = members.map(m => `
+            <div class="p-3 bg-slate-50 border rounded-lg text-xs space-y-1">
+              <div class="flex justify-between font-bold">
+                <span>${m.name}</span>
+                <span class="text-green-700">${m.account_number}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-600 pt-1 border-t">
+                <div>Thrift: <b>₦${Number(m.thrift_savings || 0).toLocaleString()}</b></div>
+                <div>Shares: <b>₦${Number(m.share_capital || 0).toLocaleString()}</b></div>
+                <div>Normal Loan: <b>₦${Number(m.loan_balance || 0).toLocaleString()}</b></div>
+                <div>Edu Loan: <b>₦${Number(m.edu_loan_balance || 0).toLocaleString()}</b></div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `<p class="text-xs text-slate-400">No matching members found.</p>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<p class="text-xs text-red-500">Search error.</p>`;
+      }
+    }
+
     async function handlePostMember(e) {
       e.preventDefault();
       try {
@@ -300,7 +365,7 @@
           showAlert('Member ledger entry posted successfully!');
           showScreen('dashboard-view');
         } else {
-          showAlert('Posting failed. Verify Account No.', true);
+          showAlert('Posting failed.  Verify Account No.', true);
         }
       } catch (err) {
         showAlert('Network error.', true);
@@ -334,38 +399,97 @@
       }
     }
 
-    async function fetchAGMSummary() {
+    async function fetchExecutiveReport(reportType) {
       try {
-        const res = await fetch(`${API_BASE}/reports/agmsummary`, {
+        const res = await fetch(`${API_BASE}/reports/${reportType}`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const data = await res.json();
         if (res.ok) {
           let html = `
             <div class="border-b pb-2 mb-2">
-              <p class="font-bold text-slate-900">DYNAMIC TEACHERS MPCS LTD, SAPELE</p>
-              <p class="text-[10px] text-slate-500">Audit Financial Summary as at ${new Date().toLocaleDateString()}</p>
-            </div>
-            <div class="space-y-1.5">
-              <p class="font-bold text-slate-700 underline text-[11px]">Member Personal Ledger Totals</p>
-              <div class="flex justify-between"><span>Total Share Capital:</span> <b>₦${Number(data.memberTotals.share_capital).toLocaleString()}</b></div>
-              <div class="flex justify-between"><span>Total Thrift Savings:</span> <b>₦${Number(data.memberTotals.thrift_savings).toLocaleString()}</b></div>
-              <div class="flex justify-between"><span>Total Capital Mobilization:</span> <b>₦${Number(data.memberTotals.cap_mob).toLocaleString()}</b></div>
-              <div class="flex justify-between"><span>Total Special Deposit:</span> <b>₦${Number(data.memberTotals.special_deposit).toLocaleString()}</b></div>
-              <div class="flex justify-between"><span>Normal Loan Balance:</span> <b>₦${Number(data.memberTotals.loan_balance).toLocaleString()}</b></div>
-              <div class="flex justify-between"><span>Education Loan Balance:</span> <b>₦${Number(data.memberTotals.edu_loan_balance).toLocaleString()}</b></div>
-
-              <p class="font-bold text-slate-700 underline text-[11px] pt-2">Comprehensive Income & Surplus</p>
-              <div class="flex justify-between text-green-700"><span>Total Society Income:</span> <b>₦${Number(data.journalTotals.income).toLocaleString()}</b></div>
-              <div class="flex justify-between text-red-700"><span>Total Expenditure:</span> <b>₦${Number(data.journalTotals.expenditure).toLocaleString()}</b></div>
-              <div class="flex justify-between pt-1 font-bold border-t text-slate-900"><span>Net Operational Surplus:</span> <b>₦${Number(data.net_surplus).toLocaleString()}</b></div>
+              <p class="font-bold text-slate-900 text-center uppercase">Dynamic Teachers MPCS Ltd, Sapele</p>
+              <p class="text-[10px] text-slate-500 text-center">Statement as at ${new Date(data.generated_at).toLocaleDateString()}</p>
             </div>
           `;
+
+          if (reportType === 'trial-balance') {
+            document.getElementById('report-modal-title').innerText = 'TRIAL BALANCE STATEMENT';
+            const totalDebit = Number(data.memberTotals.loan_balance) + Number(data.memberTotals.edu_loan_balance) + Number(data.journalTotals.expenditure);
+            const totalCredit = Number(data.memberTotals.thrift_savings) + Number(data.memberTotals.share_capital) + Number(data.memberTotals.cap_mob) + Number(data.memberTotals.special_deposit) + Number(data.journalTotals.income);
+
+            html += `
+              <table class="w-full text-left text-[11px] border-collapse">
+                <thead><tr class="border-b font-bold bg-slate-100"><th>PARTICULARS</th><th class="text-right">DEBIT (₦)</th><th class="text-right">CREDIT (₦)</th></tr></thead>
+                <tbody class="divide-y">
+                  <tr><td>Members Normal Loans</td><td class="text-right">₦${Number(data.memberTotals.loan_balance).toLocaleString()}</td><td class="text-right">-</td></tr>
+                  <tr><td>Members Education Loans</td><td class="text-right">₦${Number(data.memberTotals.edu_loan_balance).toLocaleString()}</td><td class="text-right">-</td></tr>
+                  <tr><td>Members Thrift Savings</td><td class="text-right">-</td><td class="text-right">₦${Number(data.memberTotals.thrift_savings).toLocaleString()}</td></tr>
+                  <tr><td>Members Share Capital</td><td class="text-right">-</td><td class="text-right">₦${Number(data.memberTotals.share_capital).toLocaleString()}</td></tr>
+                  <tr><td>Capital Mobilization</td><td class="text-right">-</td><td class="text-right">₦${Number(data.memberTotals.cap_mob).toLocaleString()}</td></tr>
+                  <tr><td>Special Deposits</td><td class="text-right">-</td><td class="text-right">₦${Number(data.memberTotals.special_deposit).toLocaleString()}</td></tr>
+                  <tr><td>Operating Income</td><td class="text-right">-</td><td class="text-right">₦${Number(data.journalTotals.income).toLocaleString()}</td></tr>
+                  <tr><td>Operating Expenditure</td><td class="text-right">₦${Number(data.journalTotals.expenditure).toLocaleString()}</td><td class="text-right">-</td></tr>
+                  <tr class="font-bold border-t-2 bg-slate-100"><td>TOTAL</td><td class="text-right">₦${totalDebit.toLocaleString()}</td><td class="text-right">₦${totalCredit.toLocaleString()}</td></tr>
+                </tbody>
+              </table>
+            `;
+          } else if (reportType === 'income-expenditure') {
+            document.getElementById('report-modal-title').innerText = 'INCOME & EXPENDITURE A/C';
+            html += `
+              <div class="space-y-2">
+                <div class="flex justify-between font-bold text-green-700 border-b pb-1"><span>TOTAL OPERATING INCOME:</span> <span>₦${Number(data.journalTotals.income).toLocaleString()}</span></div>
+                <div class="flex justify-between font-bold text-red-700 border-b pb-1"><span>TOTAL EXPENDITURE:</span> <span>₦${Number(data.journalTotals.expenditure).toLocaleString()}</span></div>
+                <div class="flex justify-between font-extrabold text-slate-900 border-t pt-2 text-sm bg-slate-100 p-2 rounded">
+                  <span>NET OPERATIONAL SURPLUS:</span>
+                  <span class="${data.net_surplus >= 0 ? 'text-green-700' : 'text-red-700'}">₦${Number(data.net_surplus).toLocaleString()}</span>
+                </div>
+              </div>
+            `;
+          } else if (reportType === 'appropriation') {
+            document.getElementById('report-modal-title').innerText = 'PROPOSED APPROPRIATION A/C';
+            const surplus = Number(data.net_surplus);
+            const reserveFund = surplus * 0.25; // 25% Statutory Reserve
+            const eduFund = surplus * 0.025;   // 2.5% Education Fund
+            const netDistributable = surplus - reserveFund - eduFund;
+
+            html += `
+              <div class="space-y-1.5 text-[11px]">
+                <div class="flex justify-between border-b py-1"><span>Net Surplus for Appropriation:</span> <b>₦${surplus.toLocaleString()}</b></div>
+                <div class="flex justify-between border-b py-1 text-slate-600"><span>Less: Statutory Reserve Fund (25%):</span> <b>₦${reserveFund.toLocaleString()}</b></div>
+                <div class="flex justify-between border-b py-1 text-slate-600"><span>Less: Education Fund (2.5%):</span> <b>₦${eduFund.toLocaleString()}</b></div>
+                <div class="flex justify-between font-bold border-t pt-1 text-green-800 bg-green-50 p-1.5 rounded"><span>Net Balance for Dividend & Honorarium:</span> <span>₦${netDistributable.toLocaleString()}</span></div>
+              </div>
+            `;
+          } else if (reportType === 'balance-sheet') {
+            document.getElementById('report-modal-title').innerText = 'STATEMENT OF FINANCIAL POSITION';
+            const totalAssets = Number(data.memberTotals.loan_balance) + Number(data.memberTotals.edu_loan_balance);
+            const totalLiabilities = Number(data.memberTotals.thrift_savings) + Number(data.memberTotals.share_capital) + Number(data.memberTotals.cap_mob) + Number(data.memberTotals.special_deposit);
+
+            html += `
+              <div class="space-y-2 text-[11px]">
+                <p class="font-bold underline text-slate-700">CAPITAL & LIABILITIES</p>
+                <div class="flex justify-between border-b py-0.5"><span>Members Thrift Savings:</span> <b>₦${Number(data.memberTotals.thrift_savings).toLocaleString()}</b></div>
+                <div class="flex justify-between border-b py-0.5"><span>Members Share Capital:</span> <b>₦${Number(data.memberTotals.share_capital).toLocaleString()}</b></div>
+                <div class="flex justify-between border-b py-0.5"><span>Capital Mobilization:</span> <b>₦${Number(data.memberTotals.cap_mob).toLocaleString()}</b></div>
+                <div class="flex justify-between border-b py-0.5"><span>Special Deposits:</span> <b>₦${Number(data.memberTotals.special_deposit).toLocaleString()}</b></div>
+                <div class="flex justify-between font-bold border-t pt-1 text-slate-900"><span>TOTAL LIABILITIES & EQUITY:</span> <b>₦${totalLiabilities.toLocaleString()}</b></div>
+
+                <p class="font-bold underline text-slate-700 pt-2">ASSETS & LOANS RECEIVABLE</p>
+                <div class="flex justify-between border-b py-0.5"><span>Normal Loans Outstanding:</span> <b>₦${Number(data.memberTotals.loan_balance).toLocaleString()}</b></div>
+                <div class="flex justify-between border-b py-0.5"><span>Education Loans Outstanding:</span> <b>₦${Number(data.memberTotals.edu_loan_balance).toLocaleString()}</b></div>
+                <div class="flex justify-between font-bold border-t pt-1 text-slate-900"><span>TOTAL ASSETS:</span> <b>₦${totalAssets.toLocaleString()}</b></div>
+              </div>
+            `;
+          }
+
           document.getElementById('report-modal-content').innerHTML = html;
           showScreen('report-modal-view');
+        } else {
+          showAlert('Failed to generate report.', true);
         }
-      } catch (e) {
-        showAlert('Error generating report.', true);
+      } catch (err) {
+        showAlert('Network error generating statement.', true);
       }
     }
 
