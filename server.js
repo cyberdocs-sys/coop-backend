@@ -29,7 +29,7 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// 1. MEMBER ACCOUNT ACTIVATION (First-time Password Setup)
+// 1. MEMBER ACCOUNT ACTIVATION
 app.post('/api/auth/activate', async (req, res) => {
   const { phone, password } = req.body;
   if (!phone || !password) {
@@ -37,33 +37,33 @@ app.post('/api/auth/activate', async (req, res) => {
   }
 
   try {
-    // Check if member exists in registry
     const { data: member, error: findErr } = await supabase
       .from('members')
       .select('*')
       .eq('phone', phone)
-      .single();
+      .maybeSingle();
 
     if (findErr || !member) {
       return res.status(404).json({ error: 'Phone number not found in member registry.' });
     }
 
-    // Hash the new password with bcrypt
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save password & set member active
+    // Match directly on phone number to eliminate primary key name mismatch
     const { error: updateErr } = await supabase
       .from('members')
       .update({ password: hashedPassword, is_active: true })
-      .eq('id', member.id);
+      .eq('phone', phone);
 
     if (updateErr) {
-      return res.status(500).json({ error: 'Failed to save password.' });
+      console.error('Supabase Update Error:', updateErr);
+      return res.status(500).json({ error: `Save failed: ${updateErr.message}` });
     }
 
     res.json({ message: 'Account activated successfully!' });
   } catch (err) {
-    res.status(500).json({ error: 'Server error during activation.' });
+    console.error('Activation Server Error:', err);
+    res.status(500).json({ error: `Server error: ${err.message}` });
   }
 });
 
@@ -79,18 +79,16 @@ app.post('/api/auth/login', async (req, res) => {
       .from('members')
       .select('*')
       .eq('phone', phone)
-      .single();
+      .maybeSingle();
 
     if (error || !member) {
       return res.status(401).json({ error: 'Invalid phone number or password.' });
     }
 
-    // If member exists but hasn't activated password
     if (!member.password) {
       return res.status(400).json({ error: 'Account not activated yet. Tap ACTIVATE MEMBER ACCOUNT below.' });
     }
 
-    // Verify bcrypt password hash
     const validPassword = await bcrypt.compare(password, member.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid phone number or password.' });
@@ -98,9 +96,8 @@ app.post('/api/auth/login', async (req, res) => {
 
     const userRole = member.role || (member.is_admin ? 'ADMIN' : 'MEMBER');
 
-    // Create JWT auth token
     const token = jwt.sign(
-      { id: member.id, phone: member.phone, role: userRole },
+      { id: member.id || member.phone, phone: member.phone, role: userRole },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -108,7 +105,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({
       token,
       member: {
-        id: member.id,
+        id: member.id || member.phone,
         name: member.name,
         phone: member.phone,
         role: userRole,
@@ -132,7 +129,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
       .from('members')
       .select('*')
       .eq('phone', phone)
-      .single();
+      .maybeSingle();
 
     if (findErr || !member) {
       return res.status(404).json({ error: 'Registered phone number not found.' });
@@ -143,10 +140,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
     const { error: updateErr } = await supabase
       .from('members')
       .update({ password: hashedPassword })
-      .eq('id', member.id);
+      .eq('phone', phone);
 
     if (updateErr) {
-      return res.status(500).json({ error: 'Failed to reset password.' });
+      return res.status(500).json({ error: `Reset failed: ${updateErr.message}` });
     }
 
     res.json({ message: 'Password updated successfully!' });
@@ -161,8 +158,8 @@ app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
     const { data: member, error } = await supabase
       .from('members')
       .select('savings, share_capital, loan_balance')
-      .eq('id', req.user.id)
-      .single();
+      .eq('phone', req.user.phone)
+      .maybeSingle();
 
     if (error || !member) {
       return res.status(404).json({ error: 'Member record not found.' });
@@ -184,7 +181,7 @@ app.get('/api/member/transactions', authenticateToken, async (req, res) => {
     const { data: transactions, error } = await supabase
       .from('transactions')
       .select('*')
-      .eq('member_id', req.user.id)
+      .eq('phone', req.user.phone)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -205,7 +202,7 @@ app.post('/api/loans/apply', authenticateToken, async (req, res) => {
       .from('loans')
       .insert([
         {
-          member_id: req.user.id,
+          phone: req.user.phone,
           amount,
           tenor,
           purpose,
@@ -243,7 +240,7 @@ app.get('/api/admin/members/search', authenticateToken, async (req, res) => {
   try {
     const { data: members, error } = await supabase
       .from('members')
-      .select('id, name, phone, savings, share_capital, loan_balance')
+      .select('name, phone, savings, share_capital, loan_balance')
       .or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
 
     if (error) return res.status(500).json({ error: 'Search failed.' });
@@ -257,4 +254,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Cooperative API running on port ${PORT}`);
 });
-      
+  
