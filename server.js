@@ -168,8 +168,25 @@ app.post('/api/admin/post-journal', authenticateToken, async (req, res) => {
   }
 });
 
-// 6. STATUTORY AGM REPORTS (TRIAL BALANCE & INCOME STATEMENT)
-app.get('/api/reports/agmsummary', authenticateToken, async (req, res) => {
+// 6. MEMBER SEARCH & LEDGER REGISTRY
+app.get('/api/admin/members/search', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'ADMIN') return res.status(403).json({ error: 'Unauthorized' });
+  const { q } = req.query;
+
+  try {
+    let query = supabase.from('members').select('*');
+    if (q) query = query.or(`name.ilike.%${q}%,account_number.ilike.%${q}%,phone.ilike.%${q}%`);
+
+    const { data: members, error } = await query;
+    if (error) return res.status(500).json({ error: 'Search failed.' });
+    res.json(members || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error searching members.' });
+  }
+});
+
+// 7. STATUTORY FINANCIAL REPORTS (TRIAL BALANCE, INCOME/EXP, APPROPRIATION, BALANCE SHEET)
+app.get('/api/reports/:type', authenticateToken, async (req, res) => {
   if (req.user.role !== 'ADMIN') return res.status(403).json({ error: 'Unauthorized' });
 
   try {
@@ -192,18 +209,22 @@ app.get('/api/reports/agmsummary', authenticateToken, async (req, res) => {
       return acc;
     }, { income: 0, expenditure: 0 });
 
+    const netSurplus = journalTotals.income - journalTotals.expenditure;
+
     res.json({
       status: 'success',
+      report_type: req.params.type,
       memberTotals,
       journalTotals,
-      net_surplus: journalTotals.income - journalTotals.expenditure,
+      journals: journals || [],
+      net_surplus: netSurplus,
       generated_at: new Date()
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate AGM summary.' });
+    res.status(500).json({ error: 'Failed to generate report.' });
   }
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Dynamic Teachers MPCS Server live on port ${PORT}`));
-        
+                                                
