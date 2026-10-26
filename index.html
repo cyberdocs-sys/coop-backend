@@ -1045,14 +1045,29 @@ async function handleGrantLoan() {
 <!-- AUDITOR PRINTABLE LEDGER CONTAINER (HIDDEN ON SCREEN, VISIBLE ON PRINT) -->
 <div id="printableLedgerArea" class="hidden print:block p-2 bg-white text-black font-sans">
     <style>
-      @media print {
-        @page { size: A4 landscape; margin: 10mm; }
-        body * { visibility: hidden; }
-        #printableLedgerArea, #printableLedgerArea * { visibility: visible; }
-        #printableLedgerArea { position: absolute; left: 0; top: 0; width: 100%; }
-      }
-    </style>
-    
+  @media print {
+    @page { 
+      size: A4 landscape !important; 
+      margin: 5mm !important; 
+    }
+    html, body {
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    body * { visibility: hidden; }
+    #printableLedgerArea, #printableLedgerArea * { visibility: visible; }
+    #printableLedgerArea { 
+      position: absolute; 
+      left: 0; 
+      top: 0; 
+      width: 100% !important; 
+      display: block !important;
+    }
+  }
+</style>
+ 
     <div class="flex justify-between items-end border-b-2 border-black pb-2 mb-3">
         <div>
             <h1 class="text-xl font-black uppercase tracking-wide">DYNAMIC TEACHERS' MPCS LTD</h1>
