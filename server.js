@@ -612,7 +612,7 @@ app.get('/api/admin/personal-ledger', authenticateToken, async (req, res) => {
       .from('members')
       .select('*')
       .eq('member_no', member_no)
-      .single();
+      .maybeSingle();
 
     if (memErr || !member) {
       return res.status(404).json({ error: 'Member not found' });
@@ -640,5 +640,5 @@ app.get('/api/admin/personal-ledger', authenticateToken, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Dynamic Teachers MPCS Server live on port ${PORT}`));
-        
+app.listen(PORT, () => console.log(`DTMPCS Server live on port ${PORT}`));
+
