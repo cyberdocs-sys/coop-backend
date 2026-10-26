@@ -432,6 +432,123 @@ app.get('/api/admin/members/search', authenticateToken, async (req, res) => {
   }
 });
 
+// 10. ADMIN: ONBOARD NEW MEMBER
+app.post('/api/admin/add-member', authenticateToken, async (req, res) => {
+  const {
+    member_no,
+    full_name,
+    phone,
+    role,
+    share_capital,
+    thrift_savings,
+    special_deposit,
+    cap_mob,
+    loan_balance,
+    edu_loan_balance
+  } = req.body;
+
+  if (!member_no || !full_name || !phone) {
+    return res.status(400).json({ error: 'Member No, Full Name, and Phone are required.' });
+  }
+
+  try {
+    const cleanNo = member_no.trim();
+    const { error } = await supabase.from('members').insert([{
+      member_no: cleanNo,
+      acc_no: cleanNo,
+      full_name: full_name.trim(),
+      phone: phone.trim(),
+      role: (role || 'MEMBER').toUpperCase(),
+      share_capital: Number(share_capital || 0),
+      thrift_savings: Number(thrift_savings || 0),
+      special_deposit: Number(special_deposit || 0),
+      cap_mob: Number(cap_mob || 0),
+      loan_balance: Number(loan_balance || 0),
+      edu_loan_balance: Number(edu_loan_balance || 0),
+      is_active: false
+    }]);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: `Member ${full_name} (${cleanNo}) onboarded successfully!` });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to onboard new member.' });
+  }
+});
+
+// 11. ADMIN: POST INCOME & EXPENDITURE (JOURNAL ENTRY)
+app.post('/api/admin/post-journal-entry', authenticateToken, async (req, res) => {
+  const { entry_date, account_category, account_head, description, debit, credit } = req.body;
+
+  if (!entry_date || !account_category || !account_head) {
+    return res.status(400).json({ error: 'Entry Date, Category, and Account Head are required.' });
+  }
+
+  try {
+    const { error } = await supabase.from('journal_entries').insert([{
+      entry_date,
+      account_category: account_category.toUpperCase(), // 'INCOME', 'EXPENDITURE', 'ASSET', 'LIABILITY', 'EQUITY'
+      account_head: account_head.trim(),
+      description: description || '',
+      debit: Number(debit || 0),
+      credit: Number(credit || 0)
+    }]);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: 'Financial entry posted successfully to General Ledger!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to post financial journal entry.' });
+  }
+});
+
+// 12. ADMIN: GRANT NEW LOAN TO MEMBER
+app.post('/api/admin/grant-loan', authenticateToken, async (req, res) => {
+  const { member_no, loan_type, principal_amount, disbursement_date } = req.body;
+
+  if (!member_no || !loan_type || !principal_amount || !disbursement_date) {
+    return res.status(400).json({ error: 'Member No, Loan Type, Amount, and Date are required.' });
+  }
+
+  try {
+    const cleanNo = member_no.trim();
+    const amount = Number(principal_amount);
+    const isEdu = loan_type.toUpperCase() === 'EDU';
+
+    // 1. Fetch current member loan balance
+    const { data: member, error: memErr } = await supabase
+      .from('members')
+      .select('*')
+      .eq('member_no', cleanNo)
+      .maybeSingle();
+
+    if (memErr || !member) {
+      return res.status(404).json({ error: `Member account '${cleanNo}' not found.` });
+    }
+
+    const currentBal = isEdu ? Number(member.edu_loan_balance || 0) : Number(member.loan_balance || 0);
+    const updatedBal = currentBal + amount;
+
+    // 2. Update member outstanding balance in members register
+    const updateField = isEdu ? { edu_loan_balance: updatedBal } : { loan_balance: updatedBal };
+    const { error: updErr } = await supabase.from('members').update(updateField).eq('member_no', cleanNo);
+    if (updErr) return res.status(500).json({ error: updErr.message });
+
+    // 3. Post automatically to journal_entries for Statutory Reports & Executive Summary
+    const headName = isEdu ? 'EDU LOAN DISBURSED' : 'REGULAR LOAN DISBURSED';
+    await supabase.from('journal_entries').insert([{
+      entry_date: disbursement_date,
+      account_category: 'ASSET',
+      account_head: headName,
+      description: `Loan granted to ${member.full_name || cleanNo}`,
+      debit: amount,
+      credit: 0
+    }]);
+
+    res.json({ message: `${loan_type.toUpperCase()} loan of ₦${amount.toLocaleString()} granted to ${cleanNo}!` });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to grant loan.' });
+  }
+});
+  
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Dynamic Teachers MPCS Server live on port ${PORT}`));
         
