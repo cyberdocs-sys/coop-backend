@@ -1116,8 +1116,9 @@ async function handleGrantLoan() {
 
 <script>
 async function generateAndPrintLedger() {
+async function generateAndPrintLedger() {
   const memberNo = document.getElementById('pl_member_no').value.trim();
-  const year = document.getElementById('pl_year').value.trim();
+  const year = document.getElementById('pl_year').value.trim() || '2026';
 
   if (!memberNo) return alert("Please enter a Member Number.");
 
@@ -1129,65 +1130,85 @@ async function generateAndPrintLedger() {
 
     if (data.error) return alert(data.error);
 
-    document.getElementById('pr_member_no').innerText = data.member.member_no;
-    document.getElementById('pr_member_name').innerText = data.member.full_name;
+    // Populate Header Info
+    document.getElementById('pr_member_no').innerText = data.member.member_no || memberNo;
+    document.getElementById('pr_member_name').innerText = data.member.full_name || 'N/A';
     document.getElementById('pr_year').innerText = data.year;
 
     const tbody = document.getElementById('pr_ledger_rows');
     tbody.innerHTML = '';
 
-    let runningSC = 0;
-    let runningCapMob = 0;
-    let runningTS = 0;
-    let runningSoc = 0;
-    let runningNormalLoan = 0;
-    let runningEduLoan = 0;
+    // Initialize Running Balances with Starting Balances
+    let runningSC = Number(data.member.share_capital || 0);
+    let runningCapMob = Number(data.member.cap_mob || data.member.cap_mobilization || 0);
+    let runningTS = Number(data.member.thrift_savings || 0);
+    let runningSoc = Number(data.member.social_dues || 0);
+    let runningNormalLoan = Number(data.member.loan_balance || data.member.normal_loan_bal || 0);
+    let runningEduLoan = Number(data.member.edu_loan_balance || data.member.edu_loan_bal || 0);
 
-    data.transactions.forEach(t => {
-      runningSC += Number(t.share_capital || 0);
-      runningCapMob += Number(t.cap_mobilization || 0);
-      runningTS += Number(t.thrift_savings || 0);
-      runningSoc += Number(t.social_dues || 0);
-      runningNormalLoan -= Number(t.normal_loan_repay || 0);
-      runningEduLoan -= Number(t.edu_loan_repay || 0);
+    // 1. Add Opening Balance Row (1-1-YEAR)
+    const openTr = document.createElement('tr');
+    openTr.className = "border-b border-black font-mono font-bold bg-gray-50";
+    openTr.innerHTML = `
+      <td class="border border-black p-1">01-01-${year}</td>
+      <td class="border border-black p-1 text-left">Balance b/f</td>
+      <td class="border border-black p-1">-</td>
+      <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningSC.toLocaleString()}</td>
+      <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningCapMob.toLocaleString()}</td>
+      <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningTS.toLocaleString()}</td>
+      <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningSoc.toLocaleString()}</td>
+      <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningNormalLoan.toLocaleString()}</td>
+      <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningEduLoan.toLocaleString()}</td>
+      <td class="border border-black p-1">-</td>
+    `;
+    tbody.appendChild(openTr);
 
-      const totalCr = Number(t.thrift_savings || 0) + Number(t.share_capital || 0) + 
-                      Number(t.social_dues || 0) + Number(t.normal_loan_repay || 0) + 
-                      Number(t.edu_loan_repay || 0) + Number(t.special_deposit || 0);
+    // 2. Loop Through Monthly Remittances
+    if (data.transactions && data.transactions.length > 0) {
+      data.transactions.forEach(t => {
+        const scCr = Number(t.share_capital || 0);
+        const mobCr = Number(t.cap_mobilization || t.cap_mob || 0);
+        const tsCr = Number(t.thrift_savings || 0);
+        const socCr = Number(t.social_dues || 0);
+        const nlCr = Number(t.normal_loan_repay || t.loan_repayment || 0);
+        const eduCr = Number(t.edu_loan_repay || t.edu_loan_repayment || 0);
 
-      const tr = document.createElement('tr');
-      tr.className = "border-b border-black font-mono";
-      tr.innerHTML = `
-        <td class="border border-black p-1">${t.payment_date || ''}</td>
-        <td class="border border-black p-1 text-left">SC, T/S, S/D, L/R</td>
-        <td class="border border-black p-1 font-bold">₦${totalCr.toLocaleString()}</td>
-        <td class="border border-black p-1">-</td>
-        <td class="border border-black p-1">₦${Number(t.share_capital || 0).toLocaleString()}</td>
-        <td class="border border-black p-1">₦${runningSC.toLocaleString()}</td>
-        <td class="border border-black p-1">₦${Number(t.cap_mobilization || 0).toLocaleString()}</td>
-        <td class="border border-black p-1">₦${runningCapMob.toLocaleString()}</td>
-        <td class="border border-black p-1">-</td>
-        <td class="border border-black p-1">₦${Number(t.thrift_savings || 0).toLocaleString()}</td>
-        <td class="border border-black p-1">₦${runningTS.toLocaleString()}</td>
-        <td class="border border-black p-1">-</td>
-        <td class="border border-black p-1">₦${Number(t.social_dues || 0).toLocaleString()}</td>
-        <td class="border border-black p-1">₦${runningSoc.toLocaleString()}</td>
-        <td class="border border-black p-1">-</td>
-        <td class="border border-black p-1">₦${Number(t.normal_loan_repay || 0).toLocaleString()}</td>
-        <td class="border border-black p-1">₦${runningNormalLoan.toLocaleString()}</td>
-        <td class="border border-black p-1">-</td>
-        <td class="border border-black p-1">₦${Number(t.edu_loan_repay || 0).toLocaleString()}</td>
-        <td class="border border-black p-1">₦${runningEduLoan.toLocaleString()}</td>
-        <td class="border border-black p-1">-</td>
-      `;
-      tbody.appendChild(tr);
-    });
+        runningSC += scCr;
+        runningCapMob += mobCr;
+        runningTS += tsCr;
+        runningSoc += socCr;
+        runningNormalLoan = Math.max(0, runningNormalLoan - nlCr);
+        runningEduLoan = Math.max(0, runningEduLoan - eduCr);
+
+        const totalCr = tsCr + scCr + socCr + nlCr + eduCr + Number(t.special_deposit || 0);
+
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-black font-mono";
+        tr.innerHTML = `
+          <td class="border border-black p-1">${t.payment_date || ''}</td>
+          <td class="border border-black p-1 text-left">SC, T/S, S/D, L/R</td>
+          <td class="border border-black p-1 font-bold">₦${totalCr.toLocaleString()}</td>
+          <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${scCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningSC.toLocaleString()}</td>
+          <td class="border border-black p-1">₦${mobCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningCapMob.toLocaleString()}</td>
+          <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${tsCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningTS.toLocaleString()}</td>
+          <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${socCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningSoc.toLocaleString()}</td>
+          <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${nlCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningNormalLoan.toLocaleString()}</td>
+          <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${eduCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningEduLoan.toLocaleString()}</td>
+          <td class="border border-black p-1">₦${Number(t.loan_interest || 0).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
 
     closeModal('ledgerPrintModal');
-    window.print();
+
+    // Timeout allows DOM to render before opening print dialog
+    setTimeout(() => {
+      window.print();
+    }, 300);
 
   } catch (err) {
-    alert("Error fetching ledger data for print.");
+    alert("Error fetching ledger data: " + err.message);
   }
 }
 </script>
