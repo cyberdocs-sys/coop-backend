@@ -381,23 +381,74 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
 
     // 2. Fetch current member balances using member_no directly
     const { data: member, error: memErr } = await supabase
+// 8. SECRETARY POST MONTHLY REMITTANCE (SAVINGS, SHARES & LEDGER ROW)
+app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
+  const { 
+    member_no, 
+    month_year,
+    payment_date, 
+    thrift_savings, 
+    share_capital, 
+    cap_mob, 
+    social_dues, 
+    special_deposit, 
+    loan_repayment, 
+    edu_loan_repayment,
+    loan_interest,
+    edu_interest
+  } = req.body;
+
+  if (!member_no || !payment_date) {
+    return res.status(400).json({ error: 'Member No and Payment Date are required.' });
+  }
+
+  try {
+    const cleanMemberNo = member_no.trim();
+    const thrift = Number(thrift_savings || 0);
+    const shares = Number(share_capital || 0);
+    const dues = Number(social_dues || 0);
+    const loanRepay = Number(loan_repayment || 0);
+    const eduRepay = Number(edu_loan_repayment || 0);
+    const special = Number(special_deposit || 0);
+    const mob = Number(cap_mob || 0);
+
+    // 1. Insert detailed line-by-line row into monthly_remittances for the printable ledger
+    const { error: dedErr } = await supabase
+      .from('monthly_remittances')
+      .insert([{
+        member_no: cleanMemberNo,
+        payment_date,
+        thrift_savings: thrift,
+        share_capital: shares,
+        cap_mobilization: mob,
+        social_dues: dues,
+        special_deposit: special,
+        normal_loan_repay: loanRepay,
+        edu_loan_repay: eduRepay,
+        loan_interest: Number(loan_interest || 0),
+        edu_interest: Number(edu_interest || 0)
+      }]);
+
+    if (dedErr) throw dedErr;
+
+    // 2. Fetch current member balances
+    const { data: member, error: memErr } = await supabase
       .from('members')
       .select('*')
       .eq('member_no', cleanMemberNo)
       .maybeSingle();
 
-    if (memErr || !member) {
-      return res.status(404).json({ error: `Remittance logged, but member '${cleanMemberNo}' was not found in register.` });
-    }
+    if (memErr || !member) return res.status(404).json({ error: 'Member not found' });
 
+    // 3. Calculate updated cumulative balances
     const newThrift = Number(member.thrift_savings || 0) + thrift;
     const newShares = Number(member.share_capital || 0) + shares;
     const newSpecial = Number(member.special_deposit || 0) + special;
-    const newCapMob = Number(member.cap_mob || 0) + mob;
-    const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
-    const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
+    const newCapMob = Number(member.cap_mob || member.cap_mobilization || 0) + mob;
+    const newLoanBal = Math.max(0, Number(member.loan_balance || member.normal_loan_bal || 0) - loanRepay);
+    const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || member.edu_loan_bal || 0) - eduRepay);
 
-    // 3. Update member running totals directly by member_no string (no missing updated_at column)
+    // 4. Update member master account balances
     const { error: updateErr } = await supabase
       .from('members')
       .update({
@@ -412,9 +463,10 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
 
     if (updateErr) return res.status(500).json({ error: updateErr.message });
 
-    res.json({ message: 'Remittance posted and balances updated successfully!' });
+    res.json({ message: 'Remittance posted and saved to ledger successfully' });
+
   } catch (err) {
-    res.status(500).json({ error: 'Failed to post monthly remittance.' });
+    res.status(500).json({ error: 'Failed to post remittance: ' + err.message });
   }
 });
 
