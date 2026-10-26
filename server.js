@@ -607,7 +607,6 @@ app.get('/api/admin/personal-ledger', authenticateToken, async (req, res) => {
   const targetYear = year || new Date().getFullYear();
 
   try {
-    // 1. Fetch Member Info
     const { data: member, error: memErr } = await supabase
       .from('members')
       .select('*')
@@ -618,7 +617,6 @@ app.get('/api/admin/personal-ledger', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Member not found' });
     }
 
-    // 2. Fetch All Monthly Remittances for the Selected Year
     const { data: remittances, error: remErr } = await supabase
       .from('monthly_remittances')
       .select('*')
