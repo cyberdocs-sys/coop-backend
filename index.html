@@ -191,6 +191,9 @@
 <button onclick="openModal('loanModal')" class="p-2.5 bg-indigo-800 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow col-span-2">
     💵 Grant New Loan
 </button>
+<button onclick="openModal('ledgerPrintModal')" class="p-2.5 bg-blue-900 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow col-span-2">
+    📊 Print Personal Ledger Sheet
+          </button>
         </div>
       </div>
     </div>
@@ -1026,5 +1029,152 @@ async function handleGrantLoan() {
         </div>
     </div>
 </div>
+  <!-- LEDGER PRINT MODAL -->
+<div id="ledgerPrintModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 print:hidden">
+    <div class="bg-white rounded-xl p-5 w-full max-w-sm space-y-3 shadow-2xl">
+        <h3 class="font-bold text-gray-800 text-lg border-b pb-2">Generate Personal Ledger</h3>
+        <input id="pl_member_no" type="text" placeholder="Member No (e.g. DTMPCS-0008)" class="w-full p-2 border rounded text-sm uppercase">
+        <input id="pl_year" type="number" value="2026" placeholder="Year" class="w-full p-2 border rounded text-sm">
+        <div class="flex justify-end gap-2 pt-2">
+            <button onclick="closeModal('ledgerPrintModal')" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm font-semibold">Cancel</button>
+            <button onclick="generateAndPrintLedger()" class="px-4 py-1.5 bg-blue-800 text-white rounded text-sm font-bold">Preview & Print</button>
+        </div>
+    </div>
+</div>
+
+<!-- AUDITOR PRINTABLE LEDGER CONTAINER (HIDDEN ON SCREEN, VISIBLE ON PRINT) -->
+<div id="printableLedgerArea" class="hidden print:block p-2 bg-white text-black font-sans">
+    <style>
+      @media print {
+        @page { size: A4 landscape; margin: 10mm; }
+        body * { visibility: hidden; }
+        #printableLedgerArea, #printableLedgerArea * { visibility: visible; }
+        #printableLedgerArea { position: absolute; left: 0; top: 0; width: 100%; }
+      }
+    </style>
+    
+    <div class="flex justify-between items-end border-b-2 border-black pb-2 mb-3">
+        <div>
+            <h1 class="text-xl font-black uppercase tracking-wide">DYNAMIC TEACHERS' MPCS LTD</h1>
+            <h2 class="text-sm font-bold uppercase underline">MEMBER PERSONAL LEDGER STATEMENT</h2>
+        </div>
+        <div class="text-right text-xs font-bold leading-tight">
+            <p>MEMBER NO: <span id="pr_member_no" class="font-mono text-sm"></span></p>
+            <p>NAME: <span id="pr_member_name" class="uppercase text-sm"></span></p>
+            <p>YEAR: <span id="pr_year"></span></p>
+        </div>
+    </div>
+
+    <table class="w-full text-[9px] border-collapse border border-black text-center">
+        <thead>
+            <tr class="bg-gray-200 border-b border-black font-bold">
+                <th class="border border-black p-1" rowspan="2">DATE</th>
+                <th class="border border-black p-1" rowspan="2">PARTICULARS</th>
+                <th class="border border-black p-1" rowspan="2">TOTAL CR</th>
+                <th class="border border-black p-1" colspan="3">SHARE CAPITAL (SC)</th>
+                <th class="border border-black p-1" colspan="2">CAP MOB</th>
+                <th class="border border-black p-1" colspan="3">THRIFT SAVINGS (TS)</th>
+                <th class="border border-black p-1" colspan="3">SOCIAL DUES</th>
+                <th class="border border-black p-1" colspan="3">NORMAL LOAN</th>
+                <th class="border border-black p-1" colspan="3">EDU LOAN</th>
+                <th class="border border-black p-1" rowspan="2">LOAN INT</th>
+            </tr>
+            <tr class="bg-gray-100 border-b border-black font-bold">
+                <th class="border border-black p-1">DR</th><th class="border border-black p-1">CR</th><th class="border border-black p-1">BAL</th>
+                <th class="border border-black p-1">CR</th><th class="border border-black p-1">BAL</th>
+                <th class="border border-black p-1">DR</th><th class="border border-black p-1">CR</th><th class="border border-black p-1">BAL</th>
+                <th class="border border-black p-1">DR</th><th class="border border-black p-1">CR</th><th class="border border-black p-1">BAL</th>
+                <th class="border border-black p-1">DR</th><th class="border border-black p-1">CR</th><th class="border border-black p-1">BAL</th>
+                <th class="border border-black p-1">DR</th><th class="border border-black p-1">CR</th><th class="border border-black p-1">BAL</th>
+            </tr>
+        </thead>
+        <tbody id="pr_ledger_rows">
+        </tbody>
+    </table>
+
+    <div class="flex justify-between items-center mt-10 text-xs font-bold pt-4 border-t border-black">
+        <div>PREPARED BY: _______________________</div>
+        <div>SECRETARY SIGN: _______________________</div>
+        <div>AUDITOR SIGN: _______________________</div>
+    </div>
+</div>
+
+<script>
+async function generateAndPrintLedger() {
+  const memberNo = document.getElementById('pl_member_no').value.trim();
+  const year = document.getElementById('pl_year').value.trim();
+
+  if (!memberNo) return alert("Please enter a Member Number.");
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/personal-ledger?member_no=${memberNo}&year=${year}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+
+    if (data.error) return alert(data.error);
+
+    document.getElementById('pr_member_no').innerText = data.member.member_no;
+    document.getElementById('pr_member_name').innerText = data.member.full_name;
+    document.getElementById('pr_year').innerText = data.year;
+
+    const tbody = document.getElementById('pr_ledger_rows');
+    tbody.innerHTML = '';
+
+    let runningSC = 0;
+    let runningCapMob = 0;
+    let runningTS = 0;
+    let runningSoc = 0;
+    let runningNormalLoan = 0;
+    let runningEduLoan = 0;
+
+    data.transactions.forEach(t => {
+      runningSC += Number(t.share_capital || 0);
+      runningCapMob += Number(t.cap_mobilization || 0);
+      runningTS += Number(t.thrift_savings || 0);
+      runningSoc += Number(t.social_dues || 0);
+      runningNormalLoan -= Number(t.normal_loan_repay || 0);
+      runningEduLoan -= Number(t.edu_loan_repay || 0);
+
+      const totalCr = Number(t.thrift_savings || 0) + Number(t.share_capital || 0) + 
+                      Number(t.social_dues || 0) + Number(t.normal_loan_repay || 0) + 
+                      Number(t.edu_loan_repay || 0) + Number(t.special_deposit || 0);
+
+      const tr = document.createElement('tr');
+      tr.className = "border-b border-black font-mono";
+      tr.innerHTML = `
+        <td class="border border-black p-1">${t.payment_date || ''}</td>
+        <td class="border border-black p-1 text-left">SC, T/S, S/D, L/R</td>
+        <td class="border border-black p-1 font-bold">₦${totalCr.toLocaleString()}</td>
+        <td class="border border-black p-1">-</td>
+        <td class="border border-black p-1">₦${Number(t.share_capital || 0).toLocaleString()}</td>
+        <td class="border border-black p-1">₦${runningSC.toLocaleString()}</td>
+        <td class="border border-black p-1">₦${Number(t.cap_mobilization || 0).toLocaleString()}</td>
+        <td class="border border-black p-1">₦${runningCapMob.toLocaleString()}</td>
+        <td class="border border-black p-1">-</td>
+        <td class="border border-black p-1">₦${Number(t.thrift_savings || 0).toLocaleString()}</td>
+        <td class="border border-black p-1">₦${runningTS.toLocaleString()}</td>
+        <td class="border border-black p-1">-</td>
+        <td class="border border-black p-1">₦${Number(t.social_dues || 0).toLocaleString()}</td>
+        <td class="border border-black p-1">₦${runningSoc.toLocaleString()}</td>
+        <td class="border border-black p-1">-</td>
+        <td class="border border-black p-1">₦${Number(t.normal_loan_repay || 0).toLocaleString()}</td>
+        <td class="border border-black p-1">₦${runningNormalLoan.toLocaleString()}</td>
+        <td class="border border-black p-1">-</td>
+        <td class="border border-black p-1">₦${Number(t.edu_loan_repay || 0).toLocaleString()}</td>
+        <td class="border border-black p-1">₦${runningEduLoan.toLocaleString()}</td>
+        <td class="border border-black p-1">-</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    closeModal('ledgerPrintModal');
+    window.print();
+
+  } catch (err) {
+    alert("Error fetching ledger data for print.");
+  }
+}
+</script>
 </body>
 </html>
