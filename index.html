@@ -484,44 +484,54 @@
     }
 
     async function handlePostRemittance(e) {
-      e.preventDefault();
-      const payload = {
-        member_no: document.getElementById('post-member-no').value.trim(),
-        payment_date: document.getElementById('post-payment-date').value,
-        month_year: document.getElementById('post-month-year').value,
-        thrift_savings: Number(document.getElementById('post-thrift').value || 0),
-        share_capital: Number(document.getElementById('post-shares').value || 0),
-        social_dues: Number(document.getElementById('post-dues').value || 0),
-        loan_repayment: Number(document.getElementById('post-loan').value || 0),
-        edu_loan_repayment: Number(document.getElementById('post-eduloan').value || 0),
-        special_deposit: Number(document.getElementById('post-special').value || 0),
-        cap_mob: Number(document.getElementById('post-capmob').value || 0)
-      };
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.innerText = 'POSTING PAYMENT...';
 
-      try {
-        const res = await fetch(`${API_BASE}/admin/post-monthly-deduction`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(payload)
-        });
+  const payload = {
+    member_no: document.getElementById('post-member-no').value.trim(),
+    payment_date: document.getElementById('post-payment-date').value,
+    month_year: document.getElementById('post-month-year').value,
+    thrift_savings: Number(document.getElementById('post-thrift').value || 0),
+    share_capital: Number(document.getElementById('post-shares').value || 0),
+    social_dues: Number(document.getElementById('post-dues').value || 0),
+    loan_repayment: Number(document.getElementById('post-loan').value || 0),
+    edu_loan_repayment: Number(document.getElementById('post-eduloan').value || 0),
+    special_deposit: Number(document.getElementById('post-special').value || 0),
+    cap_mob: Number(document.getElementById('post-capmob').value || 0)
+  };
 
-        const data = await res.json();
-        if (res.ok) {
-          alert('Remittance posted and balances updated!');
-          document.getElementById('post-member-no').value = '';
-          ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob'].forEach(id => document.getElementById(id).value = '');
-          calcTotal();
-          showScreen('dashboard-view');
-        } else {
-          alert(data.error || 'Failed to post remittance.');
-        }
-      } catch (err) {
-        alert('Server connection error.');
-      }
+  try {
+    const res = await fetch(`${API_BASE}/admin/post-monthly-deduction`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert('Remittance posted and balances updated!');
+      document.getElementById('post-member-no').value = '';
+      ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob'].forEach(id => document.getElementById(id).value = '');
+      calcTotal();
+      
+      // Auto-refresh passbook dashboard balances
+      await fetchDashboardBalances();
+      showScreen('dashboard-view');
+    } else {
+      alert(data.error || 'Failed to post remittance.');
     }
+  } catch (err) {
+    alert('Server connection error.');
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'SUBMIT MONTHLY REMITTANCE';
+  }
+}
 
     async function handleLogin(e) {
       e.preventDefault();
