@@ -73,7 +73,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     const userRole = (member.role || 'MEMBER').toUpperCase();
     const token = jwt.sign(
-      { phone: member.phone, member_no: member.member_no, role: userRole },
+      { phone: member.phone, member_no: member.member_no || member.acc_no, role: userRole },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -151,14 +151,16 @@ app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
 // 5. MEMBER 12-MONTH DEDUCTION SCHEDULE
 app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
   try {
+    const targetNo = (req.user.member_no || '').trim().toLowerCase();
     const { data: records, error } = await supabase
       .from('monthly_deductions')
       .select('*')
-      .eq('member_no', req.user.member_no)
       .order('id', { ascending: true });
 
     if (error) return res.status(500).json({ error: 'Failed to fetch schedule.' });
-    res.json(records || []);
+
+    const filtered = (records || []).filter(r => r.member_no && r.member_no.trim().toLowerCase() === targetNo);
+    res.json(filtered);
   } catch (err) {
     res.status(500).json({ error: 'Server error fetching schedule.' });
   }
@@ -169,9 +171,7 @@ app.get('/api/admin/executive-summary', authenticateToken, async (req, res) => {
   const month_year = req.query.month_year || '';
 
   try {
-    const { data: members } = await supabase
-      .from('members')
-      .select('share_capital, thrift_savings, special_deposit, loan_balance, edu_loan_balance');
+    const { data: members } = await supabase.from('members').select('*');
 
     let dedQuery = supabase.from('monthly_deductions').select('*');
     if (month_year) dedQuery = dedQuery.eq('month_year', month_year);
@@ -234,7 +234,7 @@ app.get('/api/admin/executive-summary', authenticateToken, async (req, res) => {
       "16_registration_fees": journalTotals.registration_fees
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate summary.' });
+    res.status(500).json({ error: 'Failed to generate executive summary.' });
   }
 });
 
@@ -380,89 +380,12 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
 
     if (dedErr) return res.status(500).json({ error: dedErr.message });
 
-    // 2. Retrieve member by member_no OR acc_no
-    let { data: member } = await supabase
-      .from('members')
-      .select('*')
-      .eq('member_no', member_no)
-      .maybeSingle();
-
-    if (!member) {
-      const { data: memberAlt } = await supabase
-        .from('members')
-        .select('*')
-        .eq('acc_no', member_no)
-        .maybeSingle();
-      member = memberAlt;
-    }
-
-    if (member) {
-      const newThrift = Number(member.thrift_savings || 0) + thrift;
-      const newShares = Number(member.share_capital || 0) + shares;
-      const newSpecial = Number(member.special_deposit || 0) + special;
-      const newCapMob = Number(member.cap_mob || 0) + mob;
-      const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
-      const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
-
-      const targetId = member.id || member.member_no || member.acc_no;
-      const updateField = member.id ? 'id' : (member.member_no ? 'member_no' : 'acc_no');
-
-      await supabase.from('members').update({
-        thrift_savings: newThrift,
-// 8. SECRETARY POST MONTHLY REMITTANCE & UPDATE LEDGER
-app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
-  const {
-    member_no,
-    month_year,
-    payment_date,
-    thrift_savings,
-    share_capital,
-    social_dues,
-    loan_repayment,
-    edu_loan_repayment,
-    special_deposit,
-    cap_mob
-  } = req.body;
-
-  if (!member_no || !month_year || !payment_date) {
-    return res.status(400).json({ error: 'Member No, Month/Year, and Payment Date are required.' });
-  }
-
-  try {
-    const thrift = Number(thrift_savings || 0);
-    const shares = Number(share_capital || 0);
-    const dues = Number(social_dues || 0);
-    const loanRepay = Number(loan_repayment || 0);
-    const eduRepay = Number(edu_loan_repayment || 0);
-    const special = Number(special_deposit || 0);
-    const mob = Number(cap_mob || 0);
-    const total = thrift + shares + dues + loanRepay + eduRepay + special + mob;
-
-    // 1. Record into monthly_deductions schedule table
-    const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
-      member_no,
-      month_year,
-      payment_date,
-      thrift_savings: thrift,
-      share_capital: shares,
-      social_dues: dues,
-      loan_repayment: loanRepay,
-      edu_loan_repayment: eduRepay,
-      special_deposit: special,
-      cap_mob: mob,
-      total_amount: total
-    }]);
-
-    if (dedErr) return res.status(500).json({ error: dedErr.message });
-
-    // 2. Multi-column search to ensure member profile is found
-    const { data: memberList } = await supabase
-      .from('members')
-      .select('*');
+    // 2. Search member profile flexible by member_no, acc_no, or phone
+    const { data: memberList } = await supabase.from('members').select('*');
 
     const member = (memberList || []).find(m => 
-      (m.member_no && m.member_no.trim() === member_no.trim()) ||
-      (m.acc_no && m.acc_no.trim() === member_no.trim()) ||
+      (m.member_no && m.member_no.trim().toLowerCase() === member_no.trim().toLowerCase()) ||
+      (m.acc_no && m.acc_no.trim().toLowerCase() === member_no.trim().toLowerCase()) ||
       (m.phone && m.phone.trim() === member_no.trim())
     );
 
