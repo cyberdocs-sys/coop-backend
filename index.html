@@ -21,7 +21,7 @@
   <!-- MAIN CONTAINER -->
   <main class="flex-1 max-w-lg w-full mx-auto p-4 flex flex-col">
 
-    <!-- LOGIN VIEW (RESTORED BRANDING & LOGO) -->
+    <!-- LOGIN VIEW -->
     <div id="login-view" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 my-auto">
       
       <!-- LOGO & HEADING -->
@@ -188,6 +188,9 @@
           <button onclick="showScreen('executive-summary-view')" class="bg-slate-700 p-2.5 rounded-lg text-xs font-semibold hover:bg-slate-600 text-left">
             <i class="fa-solid fa-chart-pie mr-1 text-emerald-400"></i> Executive Summary
           </button>
+          <button onclick="showScreen('financial-statements-view')" class="bg-slate-700 p-2.5 rounded-lg text-xs font-semibold hover:bg-slate-600 text-left col-span-2">
+            <i class="fa-solid fa-file-invoice-dollar mr-1 text-emerald-400"></i> Statutory Reports (Income/Exp, Trial Bal, Bal Sheet)
+          </button>
         </div>
       </div>
     </div>
@@ -216,12 +219,8 @@
               <th class="p-2.5 border-b text-right">Special Dep.</th>
             </tr>
           </thead>
-          <tbody id="schedule-table-body" class="divide-y bg-white">
-            <!-- Dynamic rows -->
-          </tbody>
-          <tfoot id="schedule-table-foot" class="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900">
-            <!-- Cumulative totals -->
-          </tfoot>
+          <tbody id="schedule-table-body" class="divide-y bg-white"></tbody>
+          <tfoot id="schedule-table-foot" class="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900"></tfoot>
         </table>
       </div>
 
@@ -256,9 +255,7 @@
         </select>
       </div>
 
-      <div id="executive-summary-grid" class="space-y-3">
-        <!-- Rendered via JS -->
-      </div>
+      <div id="executive-summary-grid" class="space-y-3"></div>
 
       <button onclick="window.print()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">PRINT EXECUTIVE SUMMARY</button>
     </div>
@@ -272,9 +269,102 @@
 
       <input type="text" id="member-search-input" onkeyup="searchMemberLedger()" placeholder="Search name, phone, or DTMPCS no..." class="w-full p-2.5 border rounded-lg text-xs bg-white">
 
-      <div id="ledger-results" class="space-y-2 max-h-[450px] overflow-y-auto">
-        <!-- Live search results -->
+      <div id="ledger-results" class="space-y-2 max-h-[450px] overflow-y-auto"></div>
+    </div>
+
+    <!-- STATUTORY FINANCIAL STATEMENTS VIEW -->
+    <div id="financial-statements-view" class="hidden space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm">Financial Statements & Accounts</h3>
+          <p class="text-[10px] text-slate-500">AGM Financial Reporting Suite</p>
+        </div>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-emerald-700 font-semibold">Back</button>
       </div>
+
+      <!-- TAB NAVIGATION -->
+      <div class="flex gap-1 bg-slate-200 p-1 rounded-xl text-xs font-bold">
+        <button onclick="switchStatementTab('inc-exp')" id="tab-inc-exp" class="flex-1 py-2 rounded-lg bg-emerald-800 text-white shadow">Income & Exp</button>
+        <button onclick="switchStatementTab('trial-bal')" id="tab-trial-bal" class="flex-1 py-2 rounded-lg text-slate-700 hover:bg-white">Trial Balance</button>
+        <button onclick="switchStatementTab('bal-sheet')" id="tab-bal-sheet" class="flex-1 py-2 rounded-lg text-slate-700 hover:bg-white">Balance Sheet</button>
+      </div>
+
+      <!-- 1. INCOME & EXPENDITURE REPORT -->
+      <div id="section-inc-exp" class="space-y-3 bg-white p-3 rounded-xl border shadow-sm">
+        <h4 class="text-xs font-extrabold text-slate-800 border-b pb-1">Statement of Income & Expenditure</h4>
+        
+        <div class="space-y-1">
+          <p class="text-[11px] font-bold text-emerald-800 uppercase">A. Incomes</p>
+          <div id="report-incomes" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+          <div class="flex justify-between font-extrabold text-xs text-emerald-800 pt-1">
+            <span>Total Operating Income:</span>
+            <span id="tot-income">₦0.00</span>
+          </div>
+        </div>
+
+        <div class="space-y-1 pt-2 border-t">
+          <p class="text-[11px] font-bold text-rose-800 uppercase">B. Expenditures</p>
+          <div id="report-expenditures" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+          <div class="flex justify-between font-extrabold text-xs text-rose-800 pt-1">
+            <span>Total Operating Expenditure:</span>
+            <span id="tot-expenditure">₦0.00</span>
+          </div>
+        </div>
+
+        <div class="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 flex justify-between font-extrabold text-sm text-emerald-900 mt-2">
+          <span>NET SURPLUS / (DEFICIT):</span>
+          <span id="net-surplus-val">₦0.00</span>
+        </div>
+      </div>
+
+      <!-- 2. TRIAL BALANCE -->
+      <div id="section-trial-bal" class="hidden space-y-3 bg-white p-3 rounded-xl border shadow-sm">
+        <h4 class="text-xs font-extrabold text-slate-800 border-b pb-1">Trial Balance Schedule</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-[11px] border-collapse">
+            <thead>
+              <tr class="bg-slate-900 text-white">
+                <th class="p-2">Account Head</th>
+                <th class="p-2 text-right">Debit (₦)</th>
+                <th class="p-2 text-right">Credit (₦)</th>
+              </tr>
+            </thead>
+            <tbody id="trial-bal-body" class="divide-y text-slate-700"></tbody>
+            <tfoot id="trial-bal-foot" class="bg-slate-100 font-extrabold border-t-2 text-slate-900"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. BALANCE SHEET -->
+      <div id="section-bal-sheet" class="hidden space-y-3 bg-white p-3 rounded-xl border shadow-sm">
+        <h4 class="text-xs font-extrabold text-slate-800 border-b pb-1">Statement of Financial Position (Balance Sheet)</h4>
+        
+        <div class="space-y-2">
+          <p class="text-[11px] font-bold text-blue-800 uppercase border-b pb-1">1. Assets</p>
+          <div id="bs-assets" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+          <div class="flex justify-between font-extrabold text-xs text-blue-900 pt-1">
+            <span>TOTAL ASSETS:</span>
+            <span id="bs-tot-assets">₦0.00</span>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t">
+          <p class="text-[11px] font-bold text-amber-800 uppercase border-b pb-1">2. Liabilities</p>
+          <div id="bs-liabilities" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t">
+          <p class="text-[11px] font-bold text-purple-800 uppercase border-b pb-1">3. Capital & Reserves (Equity)</p>
+          <div id="bs-equity" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+        </div>
+
+        <div class="bg-slate-900 text-white p-2.5 rounded-lg flex justify-between font-extrabold text-xs mt-2">
+          <span>TOTAL LIABILITIES & EQUITY:</span>
+          <span id="bs-tot-liab-equity">₦0.00</span>
+        </div>
+      </div>
+
+      <button onclick="window.print()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">PRINT FINANCIAL STATEMENTS</button>
     </div>
 
   </main>
@@ -283,6 +373,7 @@
     const API_BASE = 'https://coop-backend-api.onrender.com/api';
     let authToken = localStorage.getItem('coop_token') || '';
     let currentUser = JSON.parse(localStorage.getItem('coop_user') || '{}');
+    let statementData = null;
 
     window.onload = () => {
       if (authToken && currentUser) {
@@ -305,7 +396,7 @@
     }
 
     function showScreen(screenId) {
-      ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view'].forEach(id => {
+      ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view', 'financial-statements-view'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
       });
@@ -314,6 +405,7 @@
       if (screenId === 'schedule-view') fetchMonthlySchedule();
       if (screenId === 'executive-summary-view') fetchExecutiveSummary();
       if (screenId === 'ledger-search-view') searchMemberLedger();
+      if (screenId === 'financial-statements-view') fetchFinancialStatements();
     }
 
     async function handleLogin(e) {
@@ -569,6 +661,83 @@
       } catch (err) {
         container.innerHTML = `<p class="text-xs text-red-500 text-center py-4">Search error.</p>`;
       }
+    }
+
+    function switchStatementTab(tabKey) {
+      ['inc-exp', 'trial-bal', 'bal-sheet'].forEach(k => {
+        document.getElementById(`section-${k}`).classList.add('hidden');
+        document.getElementById(`tab-${k}`).className = 'flex-1 py-2 rounded-lg text-slate-700 hover:bg-white';
+      });
+
+      document.getElementById(`section-${tabKey}`).classList.remove('hidden');
+      document.getElementById(`tab-${tabKey}`).className = 'flex-1 py-2 rounded-lg bg-emerald-800 text-white shadow';
+    }
+
+    async function fetchFinancialStatements() {
+      if (statementData) return renderFinancialStatements(statementData);
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/financial-statements`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          statementData = data;
+          renderFinancialStatements(data);
+        }
+      } catch (err) {
+        alert('Error loading financial statements.');
+      }
+    }
+
+    function renderFinancialStatements(data) {
+      const ie = data.income_expenditure;
+      document.getElementById('report-incomes').innerHTML = (ie.incomes || []).map(i => `
+        <div class="flex justify-between py-1"><span>${i.head}</span><b>₦${Number(i.amount).toLocaleString()}</b></div>
+      `).join('');
+      document.getElementById('tot-income').innerText = `₦${Number(ie.total_income).toLocaleString()}`;
+
+      document.getElementById('report-expenditures').innerHTML = (ie.expenditures || []).map(e => `
+        <div class="flex justify-between py-1"><span>${e.head}</span><b>₦${Number(e.amount).toLocaleString()}</b></div>
+      `).join('');
+      document.getElementById('tot-expenditure').innerText = `₦${Number(ie.total_expenditure).toLocaleString()}`;
+      document.getElementById('net-surplus-val').innerText = `₦${Number(ie.net_surplus).toLocaleString()}`;
+
+      let totDr = 0, totCr = 0;
+      document.getElementById('trial-bal-body').innerHTML = (data.trial_balance || []).map(tb => {
+        totDr += Number(tb.debit);
+        totCr += Number(tb.credit);
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="p-2 font-medium">${tb.head}</td>
+            <td class="p-2 text-right">₦${Number(tb.debit).toLocaleString()}</td>
+            <td class="p-2 text-right">₦${Number(tb.credit).toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
+      document.getElementById('trial-bal-foot').innerHTML = `
+        <tr>
+          <td class="p-2">TOTAL</td>
+          <td class="p-2 text-right text-emerald-800">₦${totDr.toLocaleString()}</td>
+          <td class="p-2 text-right text-emerald-800">₦${totCr.toLocaleString()}</td>
+        </tr>
+      `;
+
+      const bs = data.balance_sheet;
+      document.getElementById('bs-assets').innerHTML = (bs.assets || []).map(a => `
+        <div class="flex justify-between py-1"><span>${a.head}</span><b>₦${Number(a.amount).toLocaleString()}</b></div>
+      `).join('');
+      document.getElementById('bs-tot-assets').innerText = `₦${Number(bs.total_assets).toLocaleString()}`;
+
+      document.getElementById('bs-liabilities').innerHTML = (bs.liabilities || []).map(l => `
+        <div class="flex justify-between py-1"><span>${l.head}</span><b>₦${Number(l.amount).toLocaleString()}</b></div>
+      `).join('');
+
+      document.getElementById('bs-equity').innerHTML = (bs.equity || []).map(e => `
+        <div class="flex justify-between py-1"><span>${e.head}</span><b>₦${Number(e.amount).toLocaleString()}</b></div>
+      `).join('');
+      document.getElementById('bs-tot-liab-equity').innerText = `₦${Number(bs.total_liabilities_and_equity).toLocaleString()}`;
     }
 
     function logout() {
