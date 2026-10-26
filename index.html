@@ -182,6 +182,15 @@
           <button onclick="showScreen('financial-statements-view')" class="bg-slate-700 p-2.5 rounded-lg text-xs font-semibold hover:bg-slate-600 text-left col-span-2">
             <i class="fa-solid fa-file-invoice-dollar mr-1 text-emerald-400"></i> Statutory Reports (Income/Exp, Trial Bal, Bal Sheet)
           </button>
+          <button onclick="openModal('onboardModal')" class="p-2.5 bg-emerald-800 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow">
+    👤 Onboard Member
+</button>
+<button onclick="openModal('journalModal')" class="p-2.5 bg-slate-800 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow">
+    📝 Income / Expense
+</button>
+<button onclick="openModal('loanModal')" class="p-2.5 bg-indigo-800 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow col-span-2">
+    💵 Grant New Loan
+</button>
         </div>
       </div>
     </div>
@@ -954,19 +963,6 @@ async function handleGrantLoan() {
       location.reload();
     }
   </script>
-  <!-- SECRETARY QUICK ACTION BUTTONS -->
-<div class="fixed bottom-4 right-4 z-40 flex flex-col gap-2">
-    <button onclick="openModal('onboardModal')" class="bg-emerald-700 text-white font-bold px-4 py-3 rounded-full shadow-lg hover:bg-emerald-800 text-sm flex items-center gap-2">
-        👤 Onboard Member
-    </button>
-    <button onclick="openModal('journalModal')" class="bg-slate-800 text-white font-bold px-4 py-3 rounded-full shadow-lg hover:bg-slate-900 text-sm flex items-center gap-2">
-        📝 Income/Expense
-    </button>
-    <button onclick="openModal('loanModal')" class="bg-indigo-700 text-white font-bold px-4 py-3 rounded-full shadow-lg hover:bg-indigo-800 text-sm flex items-center gap-2">
-        💵 Grant Loan
-    </button>
-</div>
-
 <!-- 1. ONBOARD MEMBER MODAL -->
 <div id="onboardModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl p-5 w-full max-w-sm space-y-3 shadow-2xl">
