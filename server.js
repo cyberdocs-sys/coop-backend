@@ -216,22 +216,22 @@ app.get('/api/admin/executive-summary', authenticateToken, async (req, res) => {
 
     res.json({
       summary_period: month_year || 'Cumulative YTD',
-      1_total_paid_in: deductionTotals.total_paid,
-      2_share_capital: memberTotals.share_capital,
-      3_thrift_savings: memberTotals.thrift_savings,
-      4_social_dues: deductionTotals.social_dues,
-      5_loan_given_out: journalTotals.loan_given,
-      6_loan_interest: journalTotals.loan_interest,
-      7_loan_refund: deductionTotals.loan_refund,
-      8_loan_balance: memberTotals.loan_balance,
-      9_edu_loan_given_out: journalTotals.edu_given,
-      10_edu_loan_interest: journalTotals.edu_interest,
-      11_edu_loan_refund: deductionTotals.edu_loan_refund,
-      12_edu_loan_balance: memberTotals.edu_loan_balance,
-      13_loan_penal_interest: journalTotals.loan_penal,
-      14_edu_loan_penal_interest: journalTotals.edu_penal,
-      15_special_deposits: memberTotals.special_deposit,
-      16_registration_fees: journalTotals.registration_fees
+      "1_total_paid_in": deductionTotals.total_paid,
+      "2_share_capital": memberTotals.share_capital,
+      "3_thrift_savings": memberTotals.thrift_savings,
+      "4_social_dues": deductionTotals.social_dues,
+      "5_loan_given_out": journalTotals.loan_given,
+      "6_loan_interest": journalTotals.loan_interest,
+      "7_loan_refund": deductionTotals.loan_refund,
+      "8_loan_balance": memberTotals.loan_balance,
+      "9_edu_loan_given_out": journalTotals.edu_given,
+      "10_edu_loan_interest": journalTotals.edu_interest,
+      "11_edu_loan_refund": deductionTotals.edu_loan_refund,
+      "12_edu_loan_balance": memberTotals.edu_loan_balance,
+      "13_loan_penal_interest": journalTotals.loan_penal,
+      "14_edu_loan_penal_interest": journalTotals.edu_penal,
+      "15_special_deposits": memberTotals.special_deposit,
+      "16_registration_fees": journalTotals.registration_fees
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate summary.' });
