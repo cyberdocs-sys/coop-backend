@@ -9,7 +9,7 @@
 </head>
 <body class="bg-slate-100 font-sans min-h-screen flex flex-col">
 
-  <!-- HEADER -->
+  <!-- TOP HEADER -->
   <header class="bg-emerald-800 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
     <div class="flex items-center gap-2">
       <i class="fa-solid fa-building-columns text-yellow-400 text-xl"></i>
@@ -21,45 +21,54 @@
   <!-- MAIN CONTAINER -->
   <main class="flex-1 max-w-lg w-full mx-auto p-4 flex flex-col">
 
-    <!-- LOGIN VIEW -->
+    <!-- LOGIN VIEW (RESTORED BRANDING & LOGO) -->
     <div id="login-view" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 my-auto">
-      <div class="text-center space-y-1">
-        <h2 class="text-xl font-bold text-slate-800">Member Portal Login</h2>
-        <p class="text-xs text-slate-500">Enter your registered phone & password</p>
+      
+      <!-- LOGO & HEADING -->
+      <div class="text-center space-y-2">
+        <div class="flex justify-center">
+          <img src="logo.png" alt="Dynamic Teachers Logo" class="w-20 h-20 object-contain rounded-full border shadow-sm" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
+        </div>
+        <h2 class="text-xl font-extrabold text-slate-800">Dynamic Teachers' MPCS LTD</h2>
+        <p class="text-xs font-semibold text-emerald-800 tracking-wide">Sapele • Member & Executive Portal</p>
       </div>
 
-      <form onsubmit="handleLogin(event)" class="space-y-3">
+      <form onsubmit="handleLogin(event)" class="space-y-4 pt-2">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Phone Number</label>
-          <input type="tel" id="login-phone" required placeholder="e.g. 08037844465" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">PHONE NUMBER</label>
+          <input type="tel" id="login-phone" required placeholder="08037844465" class="w-full p-3 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 outline-none font-medium">
         </div>
 
         <div>
           <div class="flex justify-between items-center mb-1">
-            <label class="block text-xs font-semibold text-slate-600">Password</label>
-            <button type="button" onclick="showScreen('reset-view')" class="text-xs text-emerald-700 font-semibold hover:underline">Forgot?</button>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">PASSWORD</label>
+            <button type="button" onclick="showScreen('reset-view')" class="text-xs text-emerald-700 font-bold hover:underline">Forgot?</button>
           </div>
           <div class="relative">
-            <input type="password" id="login-password" required placeholder="••••••••" class="w-full p-2.5 pr-10 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+            <input type="password" id="login-password" required placeholder="••••••••" class="w-full p-3 pr-10 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 outline-none font-medium">
             <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-login')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
               <i id="eye-login" class="fa-solid fa-eye text-sm"></i>
             </button>
           </div>
         </div>
 
-        <button type="submit" class="w-full bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm hover:bg-emerald-800 shadow">LOGIN</button>
+        <button type="submit" class="w-full bg-emerald-700 text-white font-extrabold py-3.5 rounded-xl text-sm hover:bg-emerald-800 shadow-md tracking-wider">
+          LOGIN TO PASSBOOK
+        </button>
       </form>
 
-      <div class="text-center pt-2 border-t">
-        <p class="text-xs text-slate-500">First time logging in? <button onclick="showScreen('activate-view')" class="text-emerald-700 font-bold hover:underline">Activate Account</button></p>
+      <div class="pt-2 border-t text-center">
+        <button onclick="showScreen('activate-view')" class="w-full border-2 border-emerald-700 text-emerald-800 font-bold py-2.5 rounded-xl text-xs hover:bg-emerald-50 tracking-wide">
+          ACTIVATE MEMBER ACCOUNT
+        </button>
       </div>
     </div>
 
     <!-- ACCOUNT ACTIVATION VIEW -->
     <div id="activate-view" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 my-auto">
       <div class="text-center space-y-1">
-        <h2 class="text-xl font-bold text-slate-800">Activate Account</h2>
-        <p class="text-xs text-slate-500">Set a secure password for your passbook</p>
+        <h2 class="text-xl font-bold text-slate-800">Activate Member Account</h2>
+        <p class="text-xs text-slate-500">Create a password for your digital passbook</p>
       </div>
 
       <form onsubmit="handleActivation(event)" class="space-y-3">
@@ -88,7 +97,7 @@
           </div>
         </div>
 
-        <button type="submit" class="w-full bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm shadow">ACTIVATE ACCOUNT</button>
+        <button type="submit" class="w-full bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">COMPLETE ACTIVATION</button>
       </form>
 
       <button onclick="showScreen('login-view')" class="w-full text-xs text-slate-500 hover:underline">Back to Login</button>
@@ -117,7 +126,7 @@
           </div>
         </div>
 
-        <button type="submit" class="w-full bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm shadow">RESET PASSWORD</button>
+        <button type="submit" class="w-full bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">RESET PASSWORD</button>
       </form>
 
       <button onclick="showScreen('login-view')" class="w-full text-xs text-slate-500 hover:underline">Back to Login</button>
