@@ -388,19 +388,75 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
       (m.acc_no && m.acc_no.trim().toLowerCase() === member_no.trim().toLowerCase()) ||
       (m.phone && m.phone.trim() === member_no.trim())
     );
+// 8. SECRETARY POST MONTHLY REMITTANCE & AUTOMATIC LEDGER SYNC
+app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
+  const {
+    member_no,
+    month_year,
+    payment_date,
+    thrift_savings,
+    share_capital,
+    social_dues,
+    loan_repayment,
+    edu_loan_repayment,
+    special_deposit,
+    cap_mob
+  } = req.body;
 
-    if (member) {
-      const newThrift = Number(member.thrift_savings || 0) + thrift;
-      const newShares = Number(member.share_capital || 0) + shares;
-      const newSpecial = Number(member.special_deposit || 0) + special;
-      const newCapMob = Number(member.cap_mob || 0) + mob;
-      const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
-      const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
+  if (!member_no || !month_year || !payment_date) {
+    return res.status(400).json({ error: 'Member No, Month/Year, and Payment Date are required.' });
+  }
 
-      const targetId = member.id || member.member_no || member.acc_no || member.phone;
-      const updateField = member.id ? 'id' : (member.member_no ? 'member_no' : (member.acc_no ? 'acc_no' : 'phone'));
+  try {
+    const cleanMemberNo = member_no.trim();
+    const thrift = Number(thrift_savings || 0);
+    const shares = Number(share_capital || 0);
+    const dues = Number(social_dues || 0);
+    const loanRepay = Number(loan_repayment || 0);
+    const eduRepay = Number(edu_loan_repayment || 0);
+    const special = Number(special_deposit || 0);
+    const mob = Number(cap_mob || 0);
+    const total = thrift + shares + dues + loanRepay + eduRepay + special + mob;
 
-      await supabase.from('members').update({
+    // 1. Insert remittance row into monthly_deductions
+    const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
+      member_no: cleanMemberNo,
+      month_year,
+      payment_date,
+      thrift_savings: thrift,
+      share_capital: shares,
+      social_dues: dues,
+      loan_repayment: loanRepay,
+      edu_loan_repayment: eduRepay,
+      special_deposit: special,
+      cap_mob: mob,
+      total_amount: total
+    }]);
+
+    if (dedErr) return res.status(500).json({ error: dedErr.message });
+
+    // 2. Fetch current member balances using member_no directly
+    const { data: member, error: memErr } = await supabase
+      .from('members')
+      .select('*')
+      .eq('member_no', cleanMemberNo)
+      .maybeSingle();
+
+    if (memErr || !member) {
+      return res.status(404).json({ error: `Remittance logged, but member '${cleanMemberNo}' was not found in register.` });
+    }
+
+    const newThrift = Number(member.thrift_savings || 0) + thrift;
+    const newShares = Number(member.share_capital || 0) + shares;
+    const newSpecial = Number(member.special_deposit || 0) + special;
+    const newCapMob = Number(member.cap_mob || 0) + mob;
+    const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
+    const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
+
+    // 3. Update member running totals directly by member_no string
+    const { error: updateErr } = await supabase
+      .from('members')
+      .update({
         thrift_savings: newThrift,
         share_capital: newShares,
         special_deposit: newSpecial,
@@ -408,8 +464,10 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
         loan_balance: newLoanBal,
         edu_loan_balance: newEduLoanBal,
         updated_at: payment_date
-      }).eq(updateField, targetId);
-    }
+      })
+      .eq('member_no', cleanMemberNo);
+
+    if (updateErr) return res.status(500).json({ error: updateErr.message });
 
     res.json({ message: 'Remittance posted and balances updated successfully!' });
   } catch (err) {
