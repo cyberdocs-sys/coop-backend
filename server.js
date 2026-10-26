@@ -354,60 +354,6 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
   }
 
   try {
-    const thrift = Number(thrift_savings || 0);
-    const shares = Number(share_capital || 0);
-    const dues = Number(social_dues || 0);
-    const loanRepay = Number(loan_repayment || 0);
-    const eduRepay = Number(edu_loan_repayment || 0);
-    const special = Number(special_deposit || 0);
-    const mob = Number(cap_mob || 0);
-    const total = thrift + shares + dues + loanRepay + eduRepay + special + mob;
-
-    // 1. Record into monthly_deductions schedule table
-    const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
-      member_no: member_no.trim(),
-      month_year,
-      payment_date,
-      thrift_savings: thrift,
-      share_capital: shares,
-      social_dues: dues,
-      loan_repayment: loanRepay,
-      edu_loan_repayment: eduRepay,
-      special_deposit: special,
-      cap_mob: mob,
-      total_amount: total
-    }]);
-
-    if (dedErr) return res.status(500).json({ error: dedErr.message });
-
-    // 2. Search member profile flexible by member_no, acc_no, or phone
-    const { data: memberList } = await supabase.from('members').select('*');
-
-    const member = (memberList || []).find(m => 
-      (m.member_no && m.member_no.trim().toLowerCase() === member_no.trim().toLowerCase()) ||
-      (m.acc_no && m.acc_no.trim().toLowerCase() === member_no.trim().toLowerCase()) ||
-      (m.phone && m.phone.trim() === member_no.trim())
-    );
-// 8. SECRETARY POST MONTHLY REMITTANCE & AUTOMATIC LEDGER SYNC
-app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
-  const {
-    member_no,
-    month_year,
-    payment_date,
-    thrift_savings,
-    share_capital,
-    social_dues,
-    loan_repayment,
-    edu_loan_repayment,
-    special_deposit,
-    cap_mob
-  } = req.body;
-
-  if (!member_no || !month_year || !payment_date) {
-    return res.status(400).json({ error: 'Member No, Month/Year, and Payment Date are required.' });
-  }
-
-  try {
     const cleanMemberNo = member_no.trim();
     const thrift = Number(thrift_savings || 0);
     const shares = Number(share_capital || 0);
@@ -491,3 +437,4 @@ app.get('/api/admin/members/search', authenticateToken, async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Dynamic Teachers MPCS Server live on port ${PORT}`));
+      
