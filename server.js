@@ -45,7 +45,7 @@ app.post('/api/auth/activate', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const { error: updateErr } = await supabase
       .from('members')
-      .update({ password: hashedPassword, is_active: true, updated_at: new Date() })
+      .update({ password: hashedPassword, is_active: true })
       .eq('phone', phone);
 
     if (updateErr) return res.status(500).json({ error: updateErr.message });
@@ -85,7 +85,6 @@ app.post('/api/auth/login', async (req, res) => {
         phone: member.phone,
         member_no: member.member_no || member.acc_no || '-',
         role: userRole,
-        updated_at: member.updated_at,
         is_admin: userRole === 'ADMIN' || userRole === 'SECRETARY'
       }
     });
@@ -111,7 +110,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const { error: updateErr } = await supabase
       .from('members')
-      .update({ password: hashedPassword, updated_at: new Date() })
+      .update({ password: hashedPassword })
       .eq('phone', phone);
 
     if (updateErr) return res.status(500).json({ error: 'Failed to reset password.' });
@@ -140,8 +139,7 @@ app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
       thrift_savings: member.thrift_savings || 0,
       loan_balance: member.loan_balance || 0,
       edu_loan_balance: member.edu_loan_balance || 0,
-      special_deposit: member.special_deposit || 0,
-      updated_at: member.updated_at || null
+      special_deposit: member.special_deposit || 0
     });
   } catch (err) {
     res.status(500).json({ error: 'Error fetching personal ledger.' });
@@ -399,7 +397,7 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
     const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
     const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
 
-    // 3. Update member running totals directly by member_no string
+    // 3. Update member running totals directly by member_no string (no missing updated_at column)
     const { error: updateErr } = await supabase
       .from('members')
       .update({
@@ -408,8 +406,7 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
         special_deposit: newSpecial,
         cap_mob: newCapMob,
         loan_balance: newLoanBal,
-        edu_loan_balance: newEduLoanBal,
-        updated_at: payment_date
+        edu_loan_balance: newEduLoanBal
       })
       .eq('member_no', cleanMemberNo);
 
@@ -437,4 +434,4 @@ app.get('/api/admin/members/search', authenticateToken, async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Dynamic Teachers MPCS Server live on port ${PORT}`));
-      
+        
