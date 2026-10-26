@@ -234,11 +234,123 @@ app.get('/api/admin/executive-summary', authenticateToken, async (req, res) => {
       "16_registration_fees": journalTotals.registration_fees
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate summary.' });
+    res.status(500).json({ error: 'Failed to generate executive summary.' });
   }
 });
 
-// 7. SECRETARY MEMBER POSTING
+// 7. STATUTORY FINANCIAL STATEMENTS (Income & Expenditure, Trial Balance, Balance Sheet)
+app.get('/api/admin/financial-statements', authenticateToken, async (req, res) => {
+  try {
+    const { data: members } = await supabase.from('members').select('*');
+    const { data: journals } = await supabase.from('journal_entries').select('*');
+    const { data: deductions } = await supabase.from('monthly_deductions').select('*');
+
+    const mTotals = (members || []).reduce((acc, m) => {
+      acc.shares += Number(m.share_capital || 0);
+      acc.thrift += Number(m.thrift_savings || 0);
+      acc.capmob += Number(m.cap_mob || 0);
+      acc.special += Number(m.special_deposit || 0);
+      acc.regLoan += Number(m.loan_balance || 0);
+      acc.eduLoan += Number(m.edu_loan_balance || 0);
+      return acc;
+    }, { shares: 0, thrift: 0, capmob: 0, special: 0, regLoan: 0, eduLoan: 0 });
+
+    const headMap = {};
+    let journalIncome = 0;
+    let journalExpenditure = 0;
+
+    (journals || []).forEach(j => {
+      const cat = (j.account_category || 'GENERAL').toUpperCase();
+      const head = (j.account_head || 'GENERAL').toUpperCase();
+      const dr = Number(j.debit || 0);
+      const cr = Number(j.credit || 0);
+
+      if (!headMap[head]) headMap[head] = { category: cat, debit: 0, credit: 0 };
+      headMap[head].debit += dr;
+      headMap[head].credit += cr;
+
+      if (cat === 'INCOME') journalIncome += (cr - dr);
+      if (cat === 'EXPENDITURE') journalExpenditure += (dr - cr);
+    });
+
+    const totalSocialDues = (deductions || []).reduce((sum, d) => sum + Number(d.social_dues || 0), 0);
+    const totalIncome = journalIncome + totalSocialDues;
+    const netSurplus = totalIncome - journalExpenditure;
+
+    const trialBalance = [
+      { head: 'Regular Member Loans Portfolio', debit: mTotals.regLoan, credit: 0 },
+      { head: 'Education Member Loans Portfolio', debit: mTotals.eduLoan, credit: 0 },
+      { head: 'Member Share Capital', debit: 0, credit: mTotals.shares },
+      { head: 'Member Thrift Savings', debit: 0, credit: mTotals.thrift },
+      { head: 'Capital Mobilization Deposits', debit: 0, credit: mTotals.capmob },
+      { head: 'Special Member Deposits', debit: 0, credit: mTotals.special }
+    ];
+
+    Object.keys(headMap).forEach(h => {
+      trialBalance.push({
+        head: h,
+        debit: headMap[h].debit,
+        credit: headMap[h].credit
+      });
+    });
+
+    const incomes = [
+      ...Object.keys(headMap).filter(k => headMap[k].category === 'INCOME').map(k => ({ head: k, amount: headMap[k].credit - headMap[k].debit })),
+      { head: 'Monthly Social Dues Collections', amount: totalSocialDues }
+    ];
+    const expenditures = Object.keys(headMap).filter(k => headMap[k].category === 'EXPENDITURE').map(k => ({ head: k, amount: headMap[k].debit - headMap[k].credit }));
+
+    const assetJournals = Object.keys(headMap).filter(k => headMap[k].category === 'ASSET').map(k => ({ head: k, amount: headMap[k].debit - headMap[k].credit }));
+    const liabilityJournals = Object.keys(headMap).filter(k => headMap[k].category === 'LIABILITY').map(k => ({ head: k, amount: headMap[k].credit - headMap[k].debit }));
+    const equityJournals = Object.keys(headMap).filter(k => headMap[k].category === 'EQUITY').map(k => ({ head: k, amount: headMap[k].credit - headMap[k].debit }));
+
+    const assets = [
+      { head: 'Outstanding Regular Loans', amount: mTotals.regLoan },
+      { head: 'Outstanding Education Loans', amount: mTotals.eduLoan },
+      ...assetJournals
+    ];
+
+    const liabilities = [
+      { head: 'Member Thrift Savings', amount: mTotals.thrift },
+      { head: 'Capital Mobilization Fund', amount: mTotals.capmob },
+      { head: 'Special Member Deposits', amount: mTotals.special },
+      ...liabilityJournals
+    ];
+
+    const equity = [
+      { head: 'Member Share Capital', amount: mTotals.shares },
+      { head: 'Net Surplus for the Period', amount: netSurplus },
+      ...equityJournals
+    ];
+
+    const totalAssets = assets.reduce((sum, a) => sum + a.amount, 0);
+    const totalLiabilities = liabilities.reduce((sum, l) => sum + l.amount, 0);
+    const totalEquity = equity.reduce((sum, e) => sum + e.amount, 0);
+
+    res.json({
+      generated_at: new Date(),
+      income_expenditure: {
+        incomes,
+        expenditures,
+        total_income: totalIncome,
+        total_expenditure: journalExpenditure,
+        net_surplus: netSurplus
+      },
+      trial_balance: trialBalance,
+      balance_sheet: {
+        assets,
+        liabilities,
+        equity,
+        total_assets: totalAssets,
+        total_liabilities_and_equity: totalLiabilities + totalEquity
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate financial statements.' });
+  }
+});
+
+// 8. SECRETARY MEMBER POSTING
 app.post('/api/admin/post-member-ledger', authenticateToken, async (req, res) => {
   const { member_no, ledger_type, type, amount, description } = req.body;
 
@@ -271,7 +383,7 @@ app.post('/api/admin/post-member-ledger', authenticateToken, async (req, res) =>
   }
 });
 
-// 8. SECRETARY JOURNAL ENTRY
+// 9. SECRETARY JOURNAL ENTRY
 app.post('/api/admin/post-journal', authenticateToken, async (req, res) => {
   const { account_category, account_head, description, debit, credit } = req.body;
 
@@ -291,7 +403,7 @@ app.post('/api/admin/post-journal', authenticateToken, async (req, res) => {
   }
 });
 
-// 9. MEMBER SEARCH & REGISTER
+// 10. MEMBER SEARCH & REGISTER
 app.get('/api/admin/members/search', authenticateToken, async (req, res) => {
   const { q } = req.query;
 
