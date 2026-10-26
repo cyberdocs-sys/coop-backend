@@ -81,9 +81,9 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({
       token,
       member: {
-        full_name: member.full_name,
+        full_name: member.full_name || member.name || 'Member',
         phone: member.phone,
-        member_no: member.member_no,
+        member_no: member.member_no || member.acc_no || '-',
         role: userRole,
         updated_at: member.updated_at,
         is_admin: userRole === 'ADMIN' || userRole === 'SECRETARY'
@@ -147,6 +147,7 @@ app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Error fetching personal ledger.' });
   }
 });
+
 // 5. MEMBER 12-MONTH DEDUCTION SCHEDULE
 app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
   try {
@@ -233,11 +234,11 @@ app.get('/api/admin/executive-summary', authenticateToken, async (req, res) => {
       "16_registration_fees": journalTotals.registration_fees
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate executive summary.' });
+    res.status(500).json({ error: 'Failed to generate summary.' });
   }
 });
 
-// 7. STATUTORY FINANCIAL STATEMENTS (Income & Expenditure, Trial Balance, Balance Sheet)
+// 7. STATUTORY FINANCIAL STATEMENTS
 app.get('/api/admin/financial-statements', authenticateToken, async (req, res) => {
   try {
     const { data: members } = await supabase.from('members').select('*');
@@ -286,11 +287,7 @@ app.get('/api/admin/financial-statements', authenticateToken, async (req, res) =
     ];
 
     Object.keys(headMap).forEach(h => {
-      trialBalance.push({
-        head: h,
-        debit: headMap[h].debit,
-        credit: headMap[h].credit
-      });
+      trialBalance.push({ head: h, debit: headMap[h].debit, credit: headMap[h].credit });
     });
 
     const incomes = [
@@ -328,88 +325,99 @@ app.get('/api/admin/financial-statements', authenticateToken, async (req, res) =
 
     res.json({
       generated_at: new Date(),
-      income_expenditure: {
-        incomes,
-        expenditures,
-        total_income: totalIncome,
-        total_expenditure: journalExpenditure,
-        net_surplus: netSurplus
-      },
+      income_expenditure: { incomes, expenditures, total_income: totalIncome, total_expenditure: journalExpenditure, net_surplus: netSurplus },
       trial_balance: trialBalance,
-      balance_sheet: {
-        assets,
-        liabilities,
-        equity,
-        total_assets: totalAssets,
-        total_liabilities_and_equity: totalLiabilities + totalEquity
-      }
+      balance_sheet: { assets, liabilities, equity, total_assets: totalAssets, total_liabilities_and_equity: totalLiabilities + totalEquity }
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate financial statements.' });
   }
 });
 
-// 8. SECRETARY MEMBER POSTING
-app.post('/api/admin/post-member-ledger', authenticateToken, async (req, res) => {
-  const { member_no, ledger_type, type, amount, description } = req.body;
+// 8. SECRETARY POST MONTHLY REMITTANCE & UPDATE LEDGER
+app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
+  const {
+    member_no,
+    month_year,
+    payment_date,
+    thrift_savings,
+    share_capital,
+    social_dues,
+    loan_repayment,
+    edu_loan_repayment,
+    special_deposit,
+    cap_mob
+  } = req.body;
+
+  if (!member_no || !month_year || !payment_date) {
+    return res.status(400).json({ error: 'Member No, Month/Year, and Payment Date are required.' });
+  }
 
   try {
-    const { data: member, error: findErr } = await supabase
+    const thrift = Number(thrift_savings || 0);
+    const shares = Number(share_capital || 0);
+    const dues = Number(social_dues || 0);
+    const loanRepay = Number(loan_repayment || 0);
+    const eduRepay = Number(edu_loan_repayment || 0);
+    const special = Number(special_deposit || 0);
+    const mob = Number(cap_mob || 0);
+    const total = thrift + shares + dues + loanRepay + eduRepay + special + mob;
+
+    // 1. Record into monthly_deductions schedule table
+    const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
+      member_no,
+      month_year,
+      payment_date,
+      thrift_savings: thrift,
+      share_capital: shares,
+      social_dues: dues,
+      loan_repayment: loanRepay,
+      edu_loan_repayment: eduRepay,
+      special_deposit: special,
+      cap_mob: mob,
+      total_amount: total
+    }]);
+
+    if (dedErr) return res.status(500).json({ error: dedErr.message });
+
+    // 2. Retrieve member to increment/decrement cumulative balances
+    const { data: member } = await supabase
       .from('members')
       .select('*')
       .eq('member_no', member_no)
       .maybeSingle();
 
-    if (findErr || !member) return res.status(404).json({ error: 'Member account not found.' });
+    if (member) {
+      const newThrift = Number(member.thrift_savings || 0) + thrift;
+      const newShares = Number(member.share_capital || 0) + shares;
+      const newSpecial = Number(member.special_deposit || 0) + special;
+      const newCapMob = Number(member.cap_mob || 0) + mob;
+      const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
+      const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
 
-    const currentBal = Number(member[ledger_type] || 0);
-    const numAmount = Number(amount);
-    const newBal = (type === 'CREDIT') ? (currentBal + numAmount) : (currentBal - numAmount);
+      await supabase.from('members').update({
+        thrift_savings: newThrift,
+        share_capital: newShares,
+        special_deposit: newSpecial,
+        cap_mob: newCapMob,
+        loan_balance: newLoanBal,
+        edu_loan_balance: newEduLoanBal,
+        updated_at: payment_date
+      }).eq('member_no', member_no);
+    }
 
-    await supabase.from('members').update({ [ledger_type]: newBal, updated_at: new Date() }).eq('member_no', member_no);
-    await supabase.from('member_transactions').insert([{
-      member_no,
-      phone: member.phone,
-      ledger_type,
-      type,
-      amount: numAmount,
-      description: description || 'Secretary Ledger Post'
-    }]);
-
-    res.json({ message: 'Ledger updated successfully', new_balance: newBal });
+    res.json({ message: 'Monthly remittance posted and member ledger updated successfully!' });
   } catch (err) {
-    res.status(500).json({ error: 'Server error updating member ledger.' });
+    res.status(500).json({ error: 'Failed to post monthly remittance.' });
   }
 });
 
-// 9. SECRETARY JOURNAL ENTRY
-app.post('/api/admin/post-journal', authenticateToken, async (req, res) => {
-  const { account_category, account_head, description, debit, credit } = req.body;
-
-  try {
-    const { error } = await supabase.from('journal_entries').insert([{
-      account_category,
-      account_head,
-      description,
-      debit: Number(debit || 0),
-      credit: Number(credit || 0)
-    }]);
-
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ message: 'Journal entry recorded.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error recording entry.' });
-  }
-});
-
-// 10. MEMBER SEARCH & REGISTER
+// 9. MEMBER SEARCH & REGISTER
 app.get('/api/admin/members/search', authenticateToken, async (req, res) => {
   const { q } = req.query;
-
   try {
     let query = supabase.from('members').select('*');
     if (q) query = query.or(`full_name.ilike.%${q}%,member_no.ilike.%${q}%,phone.ilike.%${q}%`);
-
     const { data: members, error } = await query.order('member_no', { ascending: true });
     if (error) return res.status(500).json({ error: 'Search failed.' });
     res.json(members || []);
