@@ -865,6 +865,36 @@
       document.getElementById('bs-tot-liab-equity').innerText = `₦${Number(bs.total_liabilities_and_equity).toLocaleString()}`;
     }
 
+    // 1. Submit New Member
+async function submitNewMember(payload) {
+  const res = await fetch(`${API_BASE}/admin/add-member`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+// 2. Post Journal Entry (Expenses / Property Income)
+async function submitJournalEntry(payload) {
+  const res = await fetch(`${API_BASE}/admin/post-journal-entry`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+// 3. Disburse New Loan
+async function submitGrantLoan(payload) {
+  const res = await fetch(`${API_BASE}/admin/grant-loan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+        }
+    
     function logout() {
       localStorage.removeItem('coop_token');
       localStorage.removeItem('coop_user');
