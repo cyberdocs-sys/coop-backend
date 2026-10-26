@@ -334,7 +334,7 @@ app.get('/api/admin/financial-statements', authenticateToken, async (req, res) =
   }
 });
 
-// 8. SECRETARY POST MONTHLY REMITTANCE & UPDATE LEDGER
+// 8. SECRETARY POST MONTHLY REMITTANCE & AUTOMATIC LEDGER SYNC
 app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
   const {
     member_no,
@@ -365,7 +365,7 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
 
     // 1. Record into monthly_deductions schedule table
     const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
-      member_no,
+      member_no: member_no.trim(),
       month_year,
       payment_date,
       thrift_savings: thrift,
