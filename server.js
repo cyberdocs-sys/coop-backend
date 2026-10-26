@@ -126,28 +126,27 @@ app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
   try {
     const { data: member, error } = await supabase
       .from('members')
-      .select('full_name, member_no, share_capital, cap_mob, thrift_savings, loan_balance, edu_loan_balance, special_deposit, updated_at')
+      .select('*')
       .eq('phone', req.user.phone)
       .maybeSingle();
 
     if (error || !member) return res.status(404).json({ error: 'Member ledger not found.' });
 
     res.json({
-      full_name: member.full_name,
-      member_no: member.member_no,
+      full_name: member.full_name || member.name || 'Member',
+      member_no: member.member_no || member.acc_no || '-',
       share_capital: member.share_capital || 0,
       cap_mob: member.cap_mob || 0,
       thrift_savings: member.thrift_savings || 0,
       loan_balance: member.loan_balance || 0,
       edu_loan_balance: member.edu_loan_balance || 0,
       special_deposit: member.special_deposit || 0,
-      updated_at: member.updated_at
+      updated_at: member.updated_at || null
     });
   } catch (err) {
     res.status(500).json({ error: 'Error fetching personal ledger.' });
   }
 });
-
 // 5. MEMBER 12-MONTH DEDUCTION SCHEDULE
 app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
   try {
