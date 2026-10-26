@@ -380,12 +380,21 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
 
     if (dedErr) return res.status(500).json({ error: dedErr.message });
 
-    // 2. Retrieve member to increment/decrement cumulative balances
-    const { data: member } = await supabase
+    // 2. Retrieve member by member_no OR acc_no
+    let { data: member } = await supabase
       .from('members')
       .select('*')
       .eq('member_no', member_no)
       .maybeSingle();
+
+    if (!member) {
+      const { data: memberAlt } = await supabase
+        .from('members')
+        .select('*')
+        .eq('acc_no', member_no)
+        .maybeSingle();
+      member = memberAlt;
+    }
 
     if (member) {
       const newThrift = Number(member.thrift_savings || 0) + thrift;
@@ -395,6 +404,9 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
       const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
       const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
 
+      const targetId = member.id || member.member_no || member.acc_no;
+      const updateField = member.id ? 'id' : (member.member_no ? 'member_no' : 'acc_no');
+
       await supabase.from('members').update({
         thrift_savings: newThrift,
         share_capital: newShares,
@@ -402,11 +414,11 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
         cap_mob: newCapMob,
         loan_balance: newLoanBal,
         edu_loan_balance: newEduLoanBal,
-        updated_at: payment_date
-      }).eq('member_no', member_no);
+        updated_at: new Date()
+      }).eq(updateField, targetId);
     }
 
-    res.json({ message: 'Monthly remittance posted and member ledger updated successfully!' });
+    res.json({ message: 'Remittance posted and balances updated successfully!' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to post monthly remittance.' });
   }
