@@ -548,7 +548,45 @@ app.post('/api/admin/grant-loan', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to grant loan.' });
   }
 });
-  
+
+// GET MEMBER PERSONAL LEDGER FOR AUDIT PRINTING
+app.get('/api/admin/personal-ledger', authenticateToken, async (req, res) => {
+  const { member_no, year } = req.query;
+  const targetYear = year || new Date().getFullYear();
+
+  try {
+    // 1. Fetch Member Info
+    const { data: member, error: memErr } = await supabase
+      .from('members')
+      .select('*')
+      .eq('member_no', member_no)
+      .single();
+
+    if (memErr || !member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    // 2. Fetch All Monthly Remittances for the Selected Year
+    const { data: remittances, error: remErr } = await supabase
+      .from('monthly_remittances')
+      .select('*')
+      .eq('member_no', member_no)
+      .gte('payment_date', `${targetYear}-01-01`)
+      .lte('payment_date', `${targetYear}-12-31`)
+      .order('payment_date', { ascending: true });
+
+    if (remErr) throw remErr;
+
+    res.json({
+      member,
+      year: targetYear,
+      transactions: remittances || []
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Dynamic Teachers MPCS Server live on port ${PORT}`));
         
