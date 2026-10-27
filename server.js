@@ -1,4 +1,4 @@
-const express = require('express');
+const Express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -332,55 +332,6 @@ app.get('/api/admin/financial-statements', authenticateToken, async (req, res) =
   }
 });
 
-// 8. SECRETARY POST MONTHLY REMITTANCE & AUTOMATIC LEDGER SYNC
-app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
-  const {
-    member_no,
-    month_year,
-    payment_date,
-    thrift_savings,
-    share_capital,
-    social_dues,
-    loan_repayment,
-    edu_loan_repayment,
-    special_deposit,
-    cap_mob
-  } = req.body;
-
-  if (!member_no || !month_year || !payment_date) {
-    return res.status(400).json({ error: 'Member No, Month/Year, and Payment Date are required.' });
-  }
-
-  try {
-    const cleanMemberNo = member_no.trim();
-    const thrift = Number(thrift_savings || 0);
-    const shares = Number(share_capital || 0);
-    const dues = Number(social_dues || 0);
-    const loanRepay = Number(loan_repayment || 0);
-    const eduRepay = Number(edu_loan_repayment || 0);
-    const special = Number(special_deposit || 0);
-    const mob = Number(cap_mob || 0);
-    const total = thrift + shares + dues + loanRepay + eduRepay + special + mob;
-
-    // 1. Insert remittance row into monthly_deductions
-    const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
-      member_no: cleanMemberNo,
-      month_year,
-      payment_date,
-      thrift_savings: thrift,
-      share_capital: shares,
-      social_dues: dues,
-      loan_repayment: loanRepay,
-      edu_loan_repayment: eduRepay,
-      special_deposit: special,
-      cap_mob: mob,
-      total_amount: total
-    }]);
-
-    if (dedErr) return res.status(500).json({ error: dedErr.message });
-
-    // 2. Fetch current member balances using member_no directly
-    const { data: member, error: memErr } = await supabase
 // 8. SECRETARY POST MONTHLY REMITTANCE (SAVINGS, SHARES & LEDGER ROW)
 app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
   const { 
@@ -412,7 +363,7 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
     const special = Number(special_deposit || 0);
     const mob = Number(cap_mob || 0);
 
-    // 1. Insert detailed line-by-line row into monthly_remittances for the printable ledger
+    // 1. Insert detailed line-by-line row into monthly_remittances for printable ledger
     const { error: dedErr } = await supabase
       .from('monthly_remittances')
       .insert([{
@@ -538,7 +489,7 @@ app.post('/api/admin/post-journal-entry', authenticateToken, async (req, res) =>
   try {
     const { error } = await supabase.from('journal_entries').insert([{
       entry_date,
-      account_category: account_category.toUpperCase(), // 'INCOME', 'EXPENDITURE', 'ASSET', 'LIABILITY', 'EQUITY'
+      account_category: account_category.toUpperCase(),
       account_head: account_head.trim(),
       description: description || '',
       debit: Number(debit || 0),
@@ -565,7 +516,6 @@ app.post('/api/admin/grant-loan', authenticateToken, async (req, res) => {
     const amount = Number(principal_amount);
     const isEdu = loan_type.toUpperCase() === 'EDU';
 
-    // 1. Fetch current member loan balance
     const { data: member, error: memErr } = await supabase
       .from('members')
       .select('*')
@@ -579,12 +529,10 @@ app.post('/api/admin/grant-loan', authenticateToken, async (req, res) => {
     const currentBal = isEdu ? Number(member.edu_loan_balance || 0) : Number(member.loan_balance || 0);
     const updatedBal = currentBal + amount;
 
-    // 2. Update member outstanding balance in members register
     const updateField = isEdu ? { edu_loan_balance: updatedBal } : { loan_balance: updatedBal };
     const { error: updErr } = await supabase.from('members').update(updateField).eq('member_no', cleanNo);
     if (updErr) return res.status(500).json({ error: updErr.message });
 
-    // 3. Post automatically to journal_entries for Statutory Reports & Executive Summary
     const headName = isEdu ? 'EDU LOAN DISBURSED' : 'REGULAR LOAN DISBURSED';
     await supabase.from('journal_entries').insert([{
       entry_date: disbursement_date,
@@ -601,7 +549,7 @@ app.post('/api/admin/grant-loan', authenticateToken, async (req, res) => {
   }
 });
 
-// GET MEMBER PERSONAL LEDGER FOR AUDIT PRINTING
+// 13. GET MEMBER PERSONAL LEDGER FOR AUDIT PRINTING
 app.get('/api/admin/personal-ledger', authenticateToken, async (req, res) => {
   const { member_no, year } = req.query;
   const targetYear = year || new Date().getFullYear();
@@ -636,5 +584,6 @@ app.get('/api/admin/personal-ledger', authenticateToken, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`DTMPCS Server live on port ${PORT}`));
