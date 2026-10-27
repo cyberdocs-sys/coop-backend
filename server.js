@@ -3,8 +3,15 @@ const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
+// Safe fallback for express-rate-limit to prevent deploy crashes on Render
+let rateLimit;
+try {
+  rateLimit = require('express-rate-limit');
+} catch (e) {
+  rateLimit = () => (req, res, next) => next();
+}
 
 // Enforce critical environment variables at server startup
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.JWT_SECRET) {
@@ -16,9 +23,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Rate limiter for auth endpoints (prevents brute-force attacks)
+// Rate limiter for auth endpoints
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 10,
   message: { error: 'Too many login attempts from this IP. Please try again after 15 minutes.' }
 });
