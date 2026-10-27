@@ -490,244 +490,258 @@
   </div>
 
   <!-- APPLICATION SCRIPT LOGIC -->
-  <script>
-    // Dynamic API Base URL detection
-    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:10000/api'
-      : 'https://coop-backend-api.onrender.com/api';
+<script>
+  // Dynamic API Base URL detection
+  const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:10000/api'
+    : 'https://coop-backend-api.onrender.com/api';
 
-    let authToken = localStorage.getItem('coop_token') || '';
-    let currentUser = JSON.parse(localStorage.getItem('coop_user') || '{}');
-    let statementData = null;
+  let authToken = localStorage.getItem('coop_token') || '';
+  let currentUser = JSON.parse(localStorage.getItem('coop_user') || '{}');
+  let statementData = null;
 
-    window.onload = () => {
-      if (authToken && currentUser && currentUser.phone) {
-        setupUserSession(currentUser);
-      } else {
-        showScreen('login-view');
-      }
-    };
+  window.onload = () => {
+    if (authToken && currentUser && currentUser.phone) {
+      setupUserSession(currentUser);
+    } else {
+      showScreen('login-view');
+    }
+  };
 
-    // Helper for authenticated API calls with automatic session handling
-    async function apiFetch(endpoint, options = {}) {
-      options.headers = options.headers || {};
-      if (authToken) {
-        options.headers['Authorization'] = `Bearer ${authToken}`;
-      }
-      if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
-        options.headers['Content-Type'] = 'application/json';
-        options.body = JSON.stringify(options.body);
-      }
+  // Central API fetcher with token & error handling
+  async function apiFetch(endpoint, options = {}) {
+    options.headers = options.headers || {};
+    if (authToken) {
+      options.headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+      options.headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(options.body);
+    }
 
-      try {
-        const res = await fetch(`${API_BASE}${endpoint}`, options);
-        const data = await res.json();
-        
-        if (res.status === 401 || res.status === 403) {
-          if (res.status === 403 && data.error && data.error.includes('Insufficient privileges')) {
-            alert('Access Denied: You do not have permission to perform this action.');
-          } else {
-            alert(data.error || 'Session expired. Please log in again.');
-            logout();
-          }
-          return null;
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, options);
+      const data = await res.json();
+      
+      if (res.status === 401 || res.status === 403) {
+        if (res.status === 403 && data.error && data.error.includes('Insufficient privileges')) {
+          alert('Access Denied: You do not have permission to perform this action.');
+        } else {
+          alert(data.error || 'Session expired. Please log in again.');
+          logout();
         }
-        
-        if (!res.ok) {
-          throw new Error(data.error || `Server error (${res.status})`);
-        }
-        return data;
-      } catch (err) {
-        alert(err.message || 'Network connection failure.');
         return null;
       }
+      
+      if (!res.ok) {
+        throw new Error(data.error || `Server error (${res.status})`);
+      }
+      return data;
+    } catch (err) {
+      alert(err.message || 'Network connection failure.');
+      return null;
     }
+  }
 
-    function togglePasswordVisibility(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon = document.getElementById(iconId);
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
+  function togglePasswordVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (icon) icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+      input.type = 'password';
+      if (icon) icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+  }
+
+  function showScreen(screenId) {
+    ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view', 'financial-statements-view', 'post-remittance-view'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+    
+    const target = document.getElementById(screenId);
+    if (target) target.classList.remove('hidden');
+
+    if (screenId === 'schedule-view') fetchMonthlySchedule();
+    if (screenId === 'executive-summary-view') fetchExecutiveSummary();
+    if (screenId === 'ledger-search-view') searchMemberLedger();
+    if (screenId === 'financial-statements-view') fetchFinancialStatements();
+    if (screenId === 'post-remittance-view') {
+      const dateEl = document.getElementById('post-payment-date');
+      if (dateEl) dateEl.valueAsDate = new Date();
+    }
+  }
+
+  function calcTotal() {
+    const t = Math.max(0, Number(document.getElementById('post-thrift')?.value || 0));
+    const s = Math.max(0, Number(document.getElementById('post-shares')?.value || 0));
+    const d = Math.max(0, Number(document.getElementById('post-dues')?.value || 0));
+    const l = Math.max(0, Number(document.getElementById('post-loan')?.value || 0));
+    const e = Math.max(0, Number(document.getElementById('post-eduloan')?.value || 0));
+    const sp = Math.max(0, Number(document.getElementById('post-special')?.value || 0));
+    const mob = Math.max(0, Number(document.getElementById('post-capmob')?.value || 0));
+
+    const tot = t + s + d + l + e + sp + mob;
+    const totalEl = document.getElementById('post-total-val');
+    if (totalEl) totalEl.innerText = `₦${tot.toLocaleString()}`;
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const phone = (document.getElementById('login-phone') || document.getElementById('phone'))?.value.trim();
+    const password = (document.getElementById('login-password') || document.getElementById('password'))?.value.trim();
+
+    if (!phone || !password) return alert('Phone number and password are required.');
+
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ phone, password })
+    });
+
+    if (data && data.token) {
+      authToken = data.token;
+      currentUser = data.member;
+      localStorage.setItem('coop_token', authToken);
+      localStorage.setItem('coop_user', JSON.stringify(currentUser));
+      setupUserSession(currentUser);
+    }
+  }
+
+  async function handleActivation(e) {
+    e.preventDefault();
+    const phone = (document.getElementById('act-phone') || document.getElementById('act_phone'))?.value.trim();
+    const password = (document.getElementById('act-password') || document.getElementById('act_password'))?.value.trim();
+    const confirm = (document.getElementById('act-confirm') || document.getElementById('act_confirm'))?.value.trim();
+
+    if (password && confirm && password !== confirm) return alert('Passwords do not match.');
+
+    const data = await apiFetch('/auth/activate', {
+      method: 'POST',
+      body: JSON.stringify({ phone, password })
+    });
+
+    if (data) {
+      alert(data.message || 'Account activated successfully!');
+      showScreen('login-view');
+    }
+  }
+
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    const phone = (document.getElementById('reset-phone') || document.getElementById('reset_phone'))?.value.trim();
+    const newPassword = (document.getElementById('reset-password') || document.getElementById('reset_password') || document.getElementById('reset-new-password'))?.value.trim();
+
+    if (!phone || !newPassword) return alert('Phone and new password are required.');
+
+    const data = await apiFetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ phone, newPassword })
+    });
+
+    if (data) {
+      alert(data.message || 'Password reset successful!');
+      showScreen('login-view');
+    }
+  }
+
+  function setupUserSession(user) {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.classList.remove('hidden');
+    
+    const isAdminOrSecretary = user.is_admin || ['ADMIN', 'SECRETARY'].includes((user.role || '').toUpperCase());
+    const adminTools = document.getElementById('admin-tools');
+    if (adminTools) {
+      if (isAdminOrSecretary) {
+        adminTools.classList.remove('hidden');
       } else {
-        input.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
+        adminTools.classList.add('hidden');
       }
     }
+    
+    showScreen('dashboard-view');
+    fetchDashboardBalances();
+  }
 
-    function showScreen(screenId) {
-      ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view', 'financial-statements-view', 'post-remittance-view'].forEach(id => {
+  async function fetchDashboardBalances() {
+    const data = await apiFetch('/member/dashboard');
+    if (data) {
+      const nameEl = document.getElementById('user-name');
+      const accEl = document.getElementById('user-acc');
+      if (nameEl) nameEl.innerText = data.full_name || 'Member';
+      if (accEl) accEl.innerText = data.member_no || '-';
+
+      const setVal = (id, val) => {
         const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-      });
-      
-      const target = document.getElementById(screenId);
-      if (target) target.classList.remove('hidden');
-
-      if (screenId === 'schedule-view') fetchMonthlySchedule();
-      if (screenId === 'executive-summary-view') fetchExecutiveSummary();
-      if (screenId === 'ledger-search-view') searchMemberLedger();
-      if (screenId === 'financial-statements-view') fetchFinancialStatements();
-      if (screenId === 'post-remittance-view') {
-        const dateEl = document.getElementById('post-payment-date');
-        if (dateEl) dateEl.valueAsDate = new Date();
-      }
-    }
-
-    function calcTotal() {
-      const t = Math.max(0, Number(document.getElementById('post-thrift').value || 0));
-      const s = Math.max(0, Number(document.getElementById('post-shares').value || 0));
-      const d = Math.max(0, Number(document.getElementById('post-dues').value || 0));
-      const l = Math.max(0, Number(document.getElementById('post-loan').value || 0));
-      const e = Math.max(0, Number(document.getElementById('post-eduloan').value || 0));
-      const sp = Math.max(0, Number(document.getElementById('post-special').value || 0));
-      const mob = Math.max(0, Number(document.getElementById('post-capmob').value || 0));
-
-      const tot = t + s + d + l + e + sp + mob;
-      document.getElementById('post-total-val').innerText = `₦${tot.toLocaleString()}`;
-    }
-
-    async function handleLogin(e) {
-      e.preventDefault();
-      const phone = document.getElementById('login-phone').value.trim();
-      const password = document.getElementById('login-password').value.trim();
-
-      if (!phone || !password) return alert('Phone number and password are required.');
-
-      const data = await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ phone, password })
-      });
-
-      if (data && data.token) {
-        authToken = data.token;
-        currentUser = data.member;
-        localStorage.setItem('coop_token', authToken);
-        localStorage.setItem('coop_user', JSON.stringify(currentUser));
-        setupUserSession(currentUser);
-      }
-    }
-
-    async function handleActivation(e) {
-      e.preventDefault();
-      const phone = document.getElementById('act-phone').value.trim();
-      const password = document.getElementById('act-password').value.trim();
-      const confirm = document.getElementById('act-confirm').value.trim();
-
-      if (password !== confirm) return alert('Passwords do not match.');
-
-      const data = await apiFetch('/auth/activate', {
-        method: 'POST',
-        body: JSON.stringify({ phone, password })
-      });
-
-      if (data) {
-        alert(data.message || 'Account activated successfully!');
-        showScreen('login-view');
-      }
-    }
-
-    async function handleResetPassword(e) {
-      e.preventDefault();
-      const phone = document.getElementById('reset-phone').value.trim();
-      const newPassword = document.getElementById('reset-password').value.trim();
-
-      if (!phone || !newPassword) return alert('Phone and new password are required.');
-
-      const data = await apiFetch('/auth/reset-password', {
-        method: 'POST',
-        body: JSON.stringify({ phone, newPassword })
-      });
-
-      if (data) {
-        alert(data.message || 'Password reset successful!');
-        showScreen('login-view');
-      }
-    }
-
-    function setupUserSession(user) {
-      document.getElementById('logout-btn').classList.remove('hidden');
-      
-      // Check RBAC privileges for Admin/Secretary navigation
-      const isAdminOrSecretary = user.is_admin || ['ADMIN', 'SECRETARY'].includes((user.role || '').toUpperCase());
-      const adminTools = document.getElementById('admin-tools');
-      if (adminTools) {
-        if (isAdminOrSecretary) {
-          adminTools.classList.remove('hidden');
-        } else {
-          adminTools.classList.add('hidden');
-        }
-      }
-      
-      showScreen('dashboard-view');
-      fetchDashboardBalances();
-    }
-
-    async function fetchDashboardBalances() {
-      const data = await apiFetch('/member/dashboard');
-      if (data) {
-        document.getElementById('user-name').innerText = data.full_name || 'Member';
-        document.getElementById('user-acc').innerText = data.member_no || '-';
-
-        document.getElementById('bal-thrift').innerText = `₦${Number(data.thrift_savings || 0).toLocaleString()}`;
-        document.getElementById('bal-shares').innerText = `₦${Number(data.share_capital || 0).toLocaleString()}`;
-        document.getElementById('bal-capmob').innerText = `₦${Number(data.cap_mob || 0).toLocaleString()}`;
-        document.getElementById('bal-special').innerText = `₦${Number(data.special_deposit || 0).toLocaleString()}`;
-        document.getElementById('bal-loan').innerText = `₦${Number(data.loan_balance || 0).toLocaleString()}`;
-        document.getElementById('bal-eduloan').innerText = `₦${Number(data.edu_loan_balance || 0).toLocaleString()}`;
-      }
-    }
-
-    async function handlePostRemittance(e) {
-      e.preventDefault();
-      const btn = e.target.querySelector('button[type="submit"]');
-      btn.disabled = true;
-      btn.innerText = 'POSTING PAYMENT...';
-
-      const payload = {
-        member_no: document.getElementById('post-member-no').value.trim(),
-        payment_date: document.getElementById('post-payment-date').value,
-        month_year: document.getElementById('post-month-year').value,
-        thrift_savings: Math.max(0, Number(document.getElementById('post-thrift').value || 0)),
-        share_capital: Math.max(0, Number(document.getElementById('post-shares').value || 0)),
-        social_dues: Math.max(0, Number(document.getElementById('post-dues').value || 0)),
-        loan_repayment: Math.max(0, Number(document.getElementById('post-loan').value || 0)),
-        edu_loan_repayment: Math.max(0, Number(document.getElementById('post-eduloan').value || 0)),
-        special_deposit: Math.max(0, Number(document.getElementById('post-special').value || 0)),
-        cap_mob: Math.max(0, Number(document.getElementById('post-capmob').value || 0))
+        if (el) el.innerText = `₦${Number(val || 0).toLocaleString()}`;
       };
 
-      const data = await apiFetch('/admin/post-monthly-deduction', {
-        method: 'POST',
-        body: payload
-      });
+      setVal('bal-thrift', data.thrift_savings);
+      setVal('bal-shares', data.share_capital);
+      setVal('bal-capmob', data.cap_mob);
+      setVal('bal-special', data.special_deposit);
+      setVal('bal-loan', data.loan_balance);
+      setVal('bal-eduloan', data.edu_loan_balance);
+    }
+  }
 
-      btn.disabled = false;
-      btn.innerText = 'SUBMIT MONTHLY REMITTANCE';
-
-      if (data) {
-        alert(data.message || 'Remittance posted and balances updated successfully!');
-        document.getElementById('post-member-no').value = '';
-        ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob'].forEach(id => {
-          const input = document.getElementById(id);
-          if (input) input.value = '';
-        });
-        calcTotal();
-        fetchDashboardBalances();
-        showScreen('dashboard-view');
-      }
+  async function handlePostRemittance(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = 'POSTING PAYMENT...';
     }
 
-    async function fetchMonthlySchedule() {
-      const tbody = document.getElementById('schedule-table-body');
-      const tfoot = document.getElementById('schedule-table-foot');
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Loading schedule...</td></tr>`;
+    const payload = {
+      member_no: document.getElementById('post-member-no')?.value.trim(),
+      payment_date: document.getElementById('post-payment-date')?.value,
+      month_year: document.getElementById('post-month-year')?.value,
+      thrift_savings: Math.max(0, Number(document.getElementById('post-thrift')?.value || 0)),
+      share_capital: Math.max(0, Number(document.getElementById('post-shares')?.value || 0)),
+      social_dues: Math.max(0, Number(document.getElementById('post-dues')?.value || 0)),
+      loan_repayment: Math.max(0, Number(document.getElementById('post-loan')?.value || 0)),
+      edu_loan_repayment: Math.max(0, Number(document.getElementById('post-eduloan')?.value || 0)),
+      special_deposit: Math.max(0, Number(document.getElementById('post-special')?.value || 0)),
+      cap_mob: Math.max(0, Number(document.getElementById('post-capmob')?.value || 0))
+    };
 
-      const records = await apiFetch('/member/monthly-schedule');
+    const data = await apiFetch('/admin/post-monthly-deduction', {
+      method: 'POST',
+      body: payload
+    });
 
-      if (records && records.length > 0) {
-        let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = 'SUBMIT MONTHLY REMITTANCE';
+    }
 
+    if (data) {
+      alert(data.message || 'Remittance posted and balances updated successfully!');
+      if (document.getElementById('post-member-no')) document.getElementById('post-member-no').value = '';
+      ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = '';
+      });
+      calcTotal();
+      fetchDashboardBalances();
+      showScreen('dashboard-view');
+    }
+  }
+
+  async function fetchMonthlySchedule() {
+    const tbody = document.getElementById('schedule-table-body');
+    const tfoot = document.getElementById('schedule-table-foot');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Loading schedule...</td></tr>`;
+
+    const records = await apiFetch('/member/monthly-schedule');
+
+    if (records && records.length > 0) {
+      let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
+
+      if (tbody) {
         tbody.innerHTML = records.map(r => {
           totals.total += Number(r.total_amount || 0);
           totals.thrift += Number(r.thrift_savings || 0);
@@ -750,7 +764,9 @@
             </tr>
           `;
         }).join('');
+      }
 
+      if (tfoot) {
         tfoot.innerHTML = `
           <tr class="font-bold bg-slate-100 border-t-2 border-slate-300">
             <td class="p-2.5">YTD TOTAL</td>
@@ -763,65 +779,67 @@
             <td class="p-2.5 text-right">₦${totals.special.toLocaleString()}</td>
           </tr>
         `;
-      } else {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No monthly postings recorded yet.</td></tr>`;
-        tfoot.innerHTML = '';
       }
+    } else {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No monthly postings recorded yet.</td></tr>`;
+      if (tfoot) tfoot.innerHTML = '';
     }
+  }
 
-    async function fetchExecutiveSummary() {
-      const month = document.getElementById('summary-month-filter').value;
-      const container = document.getElementById('executive-summary-grid');
-      container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Generating summary...</p>`;
+  async function fetchExecutiveSummary() {
+    const month = document.getElementById('summary-month-filter')?.value || '';
+    const container = document.getElementById('executive-summary-grid');
+    if (container) container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Generating summary...</p>`;
 
-      const s = await apiFetch(`/admin/executive-summary?month_year=${encodeURIComponent(month)}`);
+    const s = await apiFetch(`/admin/executive-summary?month_year=${encodeURIComponent(month)}`);
 
-      if (s) {
-        container.innerHTML = `
-          <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-            <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider border-b pb-1">1. Capital, Savings & Remittances</p>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div>Total Paid In: <b class="block text-emerald-700 font-extrabold text-sm">₦${Number(s['1_total_paid_in'] || 0).toLocaleString()}</b></div>
-              <div>Share Capital: <b class="block text-slate-800">₦${Number(s['2_share_capital'] || 0).toLocaleString()}</b></div>
-              <div>Thrift Savings: <b class="block text-slate-800">₦${Number(s['3_thrift_savings'] || 0).toLocaleString()}</b></div>
-              <div>Special Deposits: <b class="block text-slate-800">₦${Number(s['15_special_deposits'] || 0).toLocaleString()}</b></div>
-              <div>Social Dues: <b class="block text-slate-800">₦${Number(s['4_social_dues'] || 0).toLocaleString()}</b></div>
-              <div>Registration Fees: <b class="block text-slate-800">₦${Number(s['16_registration_fees'] || 0).toLocaleString()}</b></div>
-            </div>
+    if (s && container) {
+      container.innerHTML = `
+        <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
+          <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider border-b pb-1">1. Capital, Savings & Remittances</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>Total Paid In: <b class="block text-emerald-700 font-extrabold text-sm">₦${Number(s['1_total_paid_in'] || 0).toLocaleString()}</b></div>
+            <div>Share Capital: <b class="block text-slate-800">₦${Number(s['2_share_capital'] || 0).toLocaleString()}</b></div>
+            <div>Thrift Savings: <b class="block text-slate-800">₦${Number(s['3_thrift_savings'] || 0).toLocaleString()}</b></div>
+            <div>Special Deposits: <b class="block text-slate-800">₦${Number(s['15_special_deposits'] || 0).toLocaleString()}</b></div>
+            <div>Social Dues: <b class="block text-slate-800">₦${Number(s['4_social_dues'] || 0).toLocaleString()}</b></div>
+            <div>Registration Fees: <b class="block text-slate-800">₦${Number(s['16_registration_fees'] || 0).toLocaleString()}</b></div>
           </div>
+        </div>
 
-          <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-            <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider border-b pb-1">2. Regular Loan Portfolio</p>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div>Loan Disbursed: <b class="block text-slate-800">₦${Number(s['5_loan_given_out'] || 0).toLocaleString()}</b></div>
-              <div>Loan Refund: <b class="block text-emerald-700">₦${Number(s['7_loan_refund'] || 0).toLocaleString()}</b></div>
-              <div>Loan Balance: <b class="block text-amber-700 font-bold">₦${Number(s['8_loan_balance'] || 0).toLocaleString()}</b></div>
-              <div>Loan Interest: <b class="block text-slate-800">₦${Number(s['6_loan_interest'] || 0).toLocaleString()}</b></div>
-              <div class="col-span-2">Penal Interest (Regular): <b class="block text-rose-600">₦${Number(s['13_loan_penal_interest'] || 0).toLocaleString()}</b></div>
-            </div>
+        <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
+          <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider border-b pb-1">2. Regular Loan Portfolio</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>Loan Disbursed: <b class="block text-slate-800">₦${Number(s['5_loan_given_out'] || 0).toLocaleString()}</b></div>
+            <div>Loan Refund: <b class="block text-emerald-700">₦${Number(s['7_loan_refund'] || 0).toLocaleString()}</b></div>
+            <div>Loan Balance: <b class="block text-amber-700 font-bold">₦${Number(s['8_loan_balance'] || 0).toLocaleString()}</b></div>
+            <div>Loan Interest: <b class="block text-slate-800">₦${Number(s['6_loan_interest'] || 0).toLocaleString()}</b></div>
+            <div class="col-span-2">Penal Interest (Regular): <b class="block text-rose-600">₦${Number(s['13_loan_penal_interest'] || 0).toLocaleString()}</b></div>
           </div>
+        </div>
 
-          <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-            <p class="text-[11px] font-bold text-rose-800 uppercase tracking-wider border-b pb-1">3. Education Loan Portfolio</p>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div>Edu Disbursed: <b class="block text-slate-800">₦${Number(s['9_edu_loan_given_out'] || 0).toLocaleString()}</b></div>
-              <div>Edu Refund: <b class="block text-emerald-700">₦${Number(s['11_edu_loan_refund'] || 0).toLocaleString()}</b></div>
-              <div>Edu Balance: <b class="block text-rose-700 font-bold">₦${Number(s['12_edu_loan_balance'] || 0).toLocaleString()}</b></div>
-              <div>Edu Interest: <b class="block text-slate-800">₦${Number(s['10_edu_loan_interest'] || 0).toLocaleString()}</b></div>
-              <div class="col-span-2">Penal Interest (Edu): <b class="block text-rose-600">₦${Number(s['14_edu_loan_penal_interest'] || 0).toLocaleString()}</b></div>
-            </div>
+        <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
+          <p class="text-[11px] font-bold text-rose-800 uppercase tracking-wider border-b pb-1">3. Education Loan Portfolio</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>Edu Disbursed: <b class="block text-slate-800">₦${Number(s['9_edu_loan_given_out'] || 0).toLocaleString()}</b></div>
+            <div>Edu Refund: <b class="block text-emerald-700">₦${Number(s['11_edu_loan_refund'] || 0).toLocaleString()}</b></div>
+            <div>Edu Balance: <b class="block text-rose-700 font-bold">₦${Number(s['12_edu_loan_balance'] || 0).toLocaleString()}</b></div>
+            <div>Edu Interest: <b class="block text-slate-800">₦${Number(s['10_edu_loan_interest'] || 0).toLocaleString()}</b></div>
+            <div class="col-span-2">Penal Interest (Edu): <b class="block text-rose-600">₦${Number(s['14_edu_loan_penal_interest'] || 0).toLocaleString()}</b></div>
           </div>
-        `;
-      }
+        </div>
+      `;
     }
+  }
 
-    async function searchMemberLedger() {
-      const rawQuery = (document.getElementById('member-search-input').value || '').trim();
-      const sanitized = rawQuery.replace(/[^a-zA-Z0-9\s]/g, '');
-      const container = document.getElementById('ledger-results');
+  async function searchMemberLedger() {
+    const rawQuery = (document.getElementById('member-search-input')?.value || '').trim();
+    const sanitized = rawQuery.replace(/[^a-zA-Z0-9\s]/g, '');
+    const container = document.getElementById('ledger-results');
 
-      const members = await apiFetch(`/admin/members/search?q=${encodeURIComponent(sanitized)}`);
+    const members = await apiFetch(`/admin/members/search?q=${encodeURIComponent(sanitized)}`);
 
+    if (container) {
       if (members && members.length > 0) {
         container.innerHTML = members.map(m => `
           <div class="p-3 bg-white border rounded-xl text-xs space-y-1 shadow-sm">
@@ -843,42 +861,58 @@
         container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No matching members found.</p>`;
       }
     }
+  }
 
-    function switchStatementTab(tabKey) {
-      ['inc-exp', 'trial-bal', 'bal-sheet'].forEach(k => {
-        document.getElementById(`section-${k}`).classList.add('hidden');
-        document.getElementById(`tab-${k}`).className = 'flex-1 py-2 rounded-lg text-slate-700 hover:bg-white';
-      });
+  function switchStatementTab(tabKey) {
+    ['inc-exp', 'trial-bal', 'bal-sheet'].forEach(k => {
+      const sec = document.getElementById(`section-${k}`);
+      const tb = document.getElementById(`tab-${k}`);
+      if (sec) sec.classList.add('hidden');
+      if (tb) tb.className = 'flex-1 py-2 rounded-lg text-slate-700 hover:bg-white';
+    });
 
-      document.getElementById(`section-${tabKey}`).classList.remove('hidden');
-      document.getElementById(`tab-${tabKey}`).className = 'flex-1 py-2 rounded-lg bg-emerald-800 text-white shadow';
+    const activeSec = document.getElementById(`section-${tabKey}`);
+    const activeTb = document.getElementById(`tab-${tabKey}`);
+    if (activeSec) activeSec.classList.remove('hidden');
+    if (activeTb) activeTb.className = 'flex-1 py-2 rounded-lg bg-emerald-800 text-white shadow';
+  }
+
+  async function fetchFinancialStatements() {
+    if (statementData) return renderFinancialStatements(statementData);
+
+    const data = await apiFetch('/admin/financial-statements');
+    if (data) {
+      statementData = data;
+      renderFinancialStatements(data);
     }
+  }
 
-    async function fetchFinancialStatements() {
-      if (statementData) return renderFinancialStatements(statementData);
-
-      const data = await apiFetch('/admin/financial-statements');
-      if (data) {
-        statementData = data;
-        renderFinancialStatements(data);
-      }
-    }
-
-    function renderFinancialStatements(data) {
-      const ie = data.income_expenditure;
-      document.getElementById('report-incomes').innerHTML = (ie.incomes || []).map(i => `
+  function renderFinancialStatements(data) {
+    const ie = data.income_expenditure;
+    const incEl = document.getElementById('report-incomes');
+    if (incEl) {
+      incEl.innerHTML = (ie.incomes || []).map(i => `
         <div class="flex justify-between py-1"><span>${i.head}</span><b>₦${Number(i.amount || 0).toLocaleString()}</b></div>
       `).join('');
-      document.getElementById('tot-income').innerText = `₦${Number(ie.total_income || 0).toLocaleString()}`;
+    }
+    const totIncEl = document.getElementById('tot-income');
+    if (totIncEl) totIncEl.innerText = `₦${Number(ie.total_income || 0).toLocaleString()}`;
 
-      document.getElementById('report-expenditures').innerHTML = (ie.expenditures || []).map(e => `
+    const expEl = document.getElementById('report-expenditures');
+    if (expEl) {
+      expEl.innerHTML = (ie.expenditures || []).map(e => `
         <div class="flex justify-between py-1"><span>${e.head}</span><b>₦${Number(e.amount || 0).toLocaleString()}</b></div>
       `).join('');
-      document.getElementById('tot-expenditure').innerText = `₦${Number(ie.total_expenditure || 0).toLocaleString()}`;
-      document.getElementById('net-surplus-val').innerText = `₦${Number(ie.net_surplus || 0).toLocaleString()}`;
+    }
+    const totExpEl = document.getElementById('tot-expenditure');
+    if (totExpEl) totExpEl.innerText = `₦${Number(ie.total_expenditure || 0).toLocaleString()}`;
+    const netSurpEl = document.getElementById('net-surplus-val');
+    if (netSurpEl) netSurpEl.innerText = `₦${Number(ie.net_surplus || 0).toLocaleString()}`;
 
-      let totDr = 0, totCr = 0;
-      document.getElementById('trial-bal-body').innerHTML = (data.trial_balance || []).map(tb => {
+    let totDr = 0, totCr = 0;
+    const tbBody = document.getElementById('trial-bal-body');
+    if (tbBody) {
+      tbBody.innerHTML = (data.trial_balance || []).map(tb => {
         totDr += Number(tb.debit || 0);
         totCr += Number(tb.credit || 0);
         return `
@@ -889,120 +923,145 @@
           </tr>
         `;
       }).join('');
-      document.getElementById('trial-bal-foot').innerHTML = `
+    }
+    const tbFoot = document.getElementById('trial-bal-foot');
+    if (tbFoot) {
+      tbFoot.innerHTML = `
         <tr class="font-bold bg-slate-100">
           <td class="p-2">TOTAL</td>
           <td class="p-2 text-right text-emerald-800">₦${totDr.toLocaleString()}</td>
           <td class="p-2 text-right text-emerald-800">₦${totCr.toLocaleString()}</td>
         </tr>
       `;
+    }
 
-      const bs = data.balance_sheet;
-      document.getElementById('bs-assets').innerHTML = (bs.assets || []).map(a => `
+    const bs = data.balance_sheet;
+    const bsAssets = document.getElementById('bs-assets');
+    if (bsAssets) {
+      bsAssets.innerHTML = (bs.assets || []).map(a => `
         <div class="flex justify-between py-1"><span>${a.head}</span><b>₦${Number(a.amount || 0).toLocaleString()}</b></div>
       `).join('');
-      document.getElementById('bs-tot-assets').innerText = `₦${Number(bs.total_assets || 0).toLocaleString()}`;
+    }
+    const bsTotAssets = document.getElementById('bs-tot-assets');
+    if (bsTotAssets) bsTotAssets.innerText = `₦${Number(bs.total_assets || 0).toLocaleString()}`;
 
-      document.getElementById('bs-liabilities').innerHTML = (bs.liabilities || []).map(l => `
+    const bsLiab = document.getElementById('bs-liabilities');
+    if (bsLiab) {
+      bsLiab.innerHTML = (bs.liabilities || []).map(l => `
         <div class="flex justify-between py-1"><span>${l.head}</span><b>₦${Number(l.amount || 0).toLocaleString()}</b></div>
       `).join('');
+    }
 
-      document.getElementById('bs-equity').innerHTML = (bs.equity || []).map(e => `
+    const bsEq = document.getElementById('bs-equity');
+    if (bsEq) {
+      bsEq.innerHTML = (bs.equity || []).map(e => `
         <div class="flex justify-between py-1"><span>${e.head}</span><b>₦${Number(e.amount || 0).toLocaleString()}</b></div>
       `).join('');
-      document.getElementById('bs-tot-liab-equity').innerText = `₦${Number(bs.total_liabilities_and_equity || 0).toLocaleString()}`;
+    }
+    const bsTotLiabEq = document.getElementById('bs-tot-liab-equity');
+    if (bsTotLiabEq) bsTotLiabEq.innerText = `₦${Number(bs.total_liabilities_and_equity || 0).toLocaleString()}`;
+  }
+
+  function openModal(id) { 
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden'); 
+  }
+  function closeModal(id) { 
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden'); 
+  }
+
+  async function handleOnboardMember() {
+    const payload = {
+      member_no: document.getElementById('on_member_no')?.value.trim(),
+      full_name: document.getElementById('on_full_name')?.value.trim(),
+      phone: document.getElementById('on_phone')?.value.trim(),
+      role: document.getElementById('on_role')?.value,
+      share_capital: Math.max(0, Number(document.getElementById('on_shares')?.value || 0)),
+      thrift_savings: Math.max(0, Number(document.getElementById('on_thrift')?.value || 0))
+    };
+
+    if (!payload.member_no || !payload.full_name || !payload.phone) {
+      return alert("Please enter Member No, Full Name, and Phone Number.");
     }
 
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    const data = await apiFetch('/admin/add-member', {
+      method: 'POST',
+      body: payload
+    });
 
-    async function handleOnboardMember() {
-      const payload = {
-        member_no: document.getElementById('on_member_no').value.trim(),
-        full_name: document.getElementById('on_full_name').value.trim(),
-        phone: document.getElementById('on_phone').value.trim(),
-        role: document.getElementById('on_role').value,
-        share_capital: Math.max(0, Number(document.getElementById('on_shares').value || 0)),
-        thrift_savings: Math.max(0, Number(document.getElementById('on_thrift').value || 0))
-      };
+    if (data) {
+      alert(data.message || 'Member onboarded successfully!');
+      closeModal('onboardModal');
+    }
+  }
 
-      if (!payload.member_no || !payload.full_name || !payload.phone) {
-        return alert("Please enter Member No, Full Name, and Phone Number.");
-      }
+  async function handleJournalEntry() {
+    const payload = {
+      entry_date: document.getElementById('j_date')?.value,
+      account_category: document.getElementById('j_cat')?.value,
+      account_head: document.getElementById('j_head')?.value.trim(),
+      debit: Math.max(0, Number(document.getElementById('j_debit')?.value || 0)),
+      credit: Math.max(0, Number(document.getElementById('j_credit')?.value || 0))
+    };
 
-      const data = await apiFetch('/admin/add-member', {
-        method: 'POST',
-        body: payload
-      });
-
-      if (data) {
-        alert(data.message || 'Member onboarded successfully!');
-        closeModal('onboardModal');
-      }
+    if (!payload.entry_date || !payload.account_head) {
+      return alert("Please select Entry Date and specify Account Head (Particulars).");
     }
 
-    async function handleJournalEntry() {
-      const payload = {
-        entry_date: document.getElementById('j_date').value,
-        account_category: document.getElementById('j_cat').value,
-        account_head: document.getElementById('j_head').value.trim(),
-        debit: Math.max(0, Number(document.getElementById('j_debit').value || 0)),
-        credit: Math.max(0, Number(document.getElementById('j_credit').value || 0))
-      };
+    const data = await apiFetch('/admin/post-journal-entry', {
+      method: 'POST',
+      body: payload
+    });
 
-      if (!payload.entry_date || !payload.account_head) {
-        return alert("Please select Entry Date and specify Account Head (Particulars).");
-      }
+    if (data) {
+      alert(data.message || 'Journal entry posted successfully!');
+      statementData = null;
+      closeModal('journalModal');
+    }
+  }
 
-      const data = await apiFetch('/admin/post-journal-entry', {
-        method: 'POST',
-        body: payload
-      });
+  async function handleGrantLoan() {
+    const payload = {
+      member_no: document.getElementById('l_member_no')?.value.trim(),
+      loan_type: document.getElementById('l_type')?.value,
+      principal_amount: Number(document.getElementById('l_amount')?.value || 0),
+      disbursement_date: document.getElementById('l_date')?.value || new Date().toISOString().split('T')[0]
+    };
 
-      if (data) {
-        alert(data.message || 'Journal entry posted successfully!');
-        statementData = null; // Reset cached financial statement data
-        closeModal('journalModal');
-      }
+    if (!payload.member_no || payload.principal_amount <= 0) {
+      return alert("Please enter Member No and a positive loan amount.");
     }
 
-    async function handleGrantLoan() {
-      const payload = {
-        member_no: document.getElementById('l_member_no').value.trim(),
-        loan_type: document.getElementById('l_type').value,
-        principal_amount: Number(document.getElementById('l_amount').value || 0),
-        disbursement_date: document.getElementById('l_date').value
-      };
+    const data = await apiFetch('/admin/grant-loan', {
+      method: 'POST',
+      body: payload
+    });
 
-      if (!payload.member_no || payload.principal_amount <= 0 || !payload.disbursement_date) {
-        return alert("Please enter Member No, a positive loan amount, and Disbursement Date.");
-      }
-
-      const data = await apiFetch('/admin/grant-loan', {
-        method: 'POST',
-        body: payload
-      });
-
-      if (data) {
-        alert(data.message || 'Loan granted successfully!');
-        closeModal('loanModal');
-      }
+    if (data) {
+      alert(data.message || 'Loan granted successfully!');
+      closeModal('loanModal');
     }
+  }
 
-    async function generateAndPrintLedger() {
-      const memberNo = document.getElementById('pl_member_no').value.trim();
-      const year = document.getElementById('pl_year').value.trim() || new Date().getFullYear();
+  async function generateAndPrintLedger() {
+    const memberNo = document.getElementById('pl_member_no')?.value.trim();
+    const year = document.getElementById('pl_year')?.value.trim() || new Date().getFullYear();
 
-      if (!memberNo) return alert("Please enter a Member Number.");
+    if (!memberNo) return alert("Please enter a Member Number.");
 
-      const data = await apiFetch(`/admin/personal-ledger?member_no=${encodeURIComponent(memberNo)}&year=${year}`);
+    const data = await apiFetch(`/admin/personal-ledger?member_no=${encodeURIComponent(memberNo)}&year=${year}`);
 
-      if (data) {
-        document.getElementById('pr_member_no').innerText = data.member.member_no || memberNo;
-        document.getElementById('pr_member_name').innerText = data.member.full_name || 'N/A';
-        document.getElementById('pr_year').innerText = data.year;
+    if (data) {
+      const prNo = document.getElementById('pr_member_no');
+      const prName = document.getElementById('pr_member_name');
+      const prYr = document.getElementById('pr_year');
+      if (prNo) prNo.innerText = data.member.member_no || memberNo;
+      if (prName) prName.innerText = data.member.full_name || 'N/A';
+      if (prYr) prYr.innerText = data.year;
 
-        const tbody = document.getElementById('pr_ledger_rows');
+      const tbody = document.getElementById('pr_ledger_rows');
+      if (tbody) {
         tbody.innerHTML = '';
 
         let runningSC = Number(data.member.share_capital || 0);
@@ -1063,20 +1122,18 @@
             tbody.appendChild(tr);
           });
         }
-
-        closeModal('ledgerPrintModal');
-
-        setTimeout(() => {
-          window.print();
-        }, 300);
       }
-    }
 
-    function logout() {
-      localStorage.removeItem('coop_token');
-      localStorage.removeItem('coop_user');
-      location.reload();
+      closeModal('ledgerPrintModal');
+      setTimeout(() => { window.print(); }, 300);
     }
-  </script>
+  }
+
+  function logout() {
+    localStorage.removeItem('coop_token');
+    localStorage.removeItem('coop_user');
+    location.reload();
+  }
+</script>
 </body>
 </html>
