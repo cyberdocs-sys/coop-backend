@@ -1,4 +1,4 @@
-const Express = require('express');
+const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -45,7 +45,7 @@ app.post('/api/auth/activate', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const { error: updateErr } = await supabase
       .from('members')
-      .update({ password: hashedPassword, is_active: true })
+      .update({ password: hashedPassword, status: 'ACTIVE' })
       .eq('phone', phone);
 
     if (updateErr) return res.status(500).json({ error: updateErr.message });
@@ -73,7 +73,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     const userRole = (member.role || 'MEMBER').toUpperCase();
     const token = jwt.sign(
-      { phone: member.phone, member_no: member.member_no || member.acc_no, role: userRole },
+      { phone: member.phone, member_no: member.member_no, role: userRole },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -81,9 +81,9 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({
       token,
       member: {
-        full_name: member.full_name || member.name || 'Member',
+        full_name: member.full_name || 'Member',
         phone: member.phone,
-        member_no: member.member_no || member.acc_no || '-',
+        member_no: member.member_no || '-',
         role: userRole,
         is_admin: userRole === 'ADMIN' || userRole === 'SECRETARY'
       }
@@ -132,8 +132,8 @@ app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
     if (error || !member) return res.status(404).json({ error: 'Member ledger not found.' });
 
     res.json({
-      full_name: member.full_name || member.name || 'Member',
-      member_no: member.member_no || member.acc_no || '-',
+      full_name: member.full_name || 'Member',
+      member_no: member.member_no || '-',
       share_capital: member.share_capital || 0,
       cap_mob: member.cap_mob || 0,
       thrift_savings: member.thrift_savings || 0,
@@ -195,9 +195,9 @@ app.get('/api/admin/executive-summary', authenticateToken, async (req, res) => {
     }, { total_paid: 0, social_dues: 0, loan_refund: 0, edu_loan_refund: 0 });
 
     const journalTotals = (journals || []).reduce((acc, j) => {
-      const head = (j.account_head || '').toUpperCase();
-      const credit = Number(j.credit || 0);
-      const debit = Number(j.debit || 0);
+      const head = (j.particulars || '').toUpperCase();
+      const credit = Number(j.credit_amount || 0);
+      const debit = Number(j.debit_amount || 0);
 
       if (head.includes('REGULAR LOAN DISBURSED')) acc.loan_given += debit;
       if (head.includes('REGULAR LOAN INTEREST')) acc.loan_interest += credit;
@@ -258,10 +258,10 @@ app.get('/api/admin/financial-statements', authenticateToken, async (req, res) =
     let journalExpenditure = 0;
 
     (journals || []).forEach(j => {
-      const cat = (j.account_category || 'GENERAL').toUpperCase();
-      const head = (j.account_head || 'GENERAL').toUpperCase();
-      const dr = Number(j.debit || 0);
-      const cr = Number(j.credit || 0);
+      const cat = (j.category || 'GENERAL').toUpperCase();
+      const head = (j.particulars || 'GENERAL').toUpperCase();
+      const dr = Number(j.debit_amount || 0);
+      const cr = Number(j.credit_amount || 0);
 
       if (!headMap[head]) headMap[head] = { category: cat, debit: 0, credit: 0 };
       headMap[head].debit += dr;
@@ -332,7 +332,7 @@ app.get('/api/admin/financial-statements', authenticateToken, async (req, res) =
   }
 });
 
-// 8. SECRETARY POST MONTHLY REMITTANCE (SAVINGS, SHARES & LEDGER ROW)
+// 8. SECRETARY POST MONTHLY REMITTANCE (DUAL POSTING TO BOTH TABLES)
 app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res) => {
   const { 
     member_no, 
@@ -362,27 +362,41 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
     const eduRepay = Number(edu_loan_repayment || 0);
     const special = Number(special_deposit || 0);
     const mob = Number(cap_mob || 0);
+    const total = thrift + shares + dues + loanRepay + eduRepay + special + mob;
 
-    // 1. Insert detailed line-by-line row into monthly_remittances for printable ledger
-    const { error: dedErr } = await supabase
-      .from('monthly_remittances')
-      .insert([{
-        member_no: cleanMemberNo,
-        payment_date,
-        thrift_savings: thrift,
-        share_capital: shares,
-        cap_mobilization: mob,
-        social_dues: dues,
-        special_deposit: special,
-        normal_loan_repay: loanRepay,
-        edu_loan_repay: eduRepay,
-        loan_interest: Number(loan_interest || 0),
-        edu_interest: Number(edu_interest || 0)
-      }]);
-
+    // 1. Insert into monthly_deductions
+    const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
+      member_no: cleanMemberNo,
+      month_year: month_year || 'JAN 2026',
+      payment_date,
+      thrift_savings: thrift,
+      share_capital: shares,
+      social_dues: dues,
+      loan_repayment: loanRepay,
+      edu_loan_repayment: eduRepay,
+      special_deposit: special,
+      cap_mob: mob,
+      total_amount: total
+    }]);
     if (dedErr) throw dedErr;
 
-    // 2. Fetch current member balances
+    // 2. Insert into monthly_remittances
+    const { error: remErr } = await supabase.from('monthly_remittances').insert([{
+      member_no: cleanMemberNo,
+      payment_date,
+      thrift_savings: thrift,
+      share_capital: shares,
+      cap_mobilization: mob,
+      social_dues: dues,
+      special_deposit: special,
+      normal_loan_repay: loanRepay,
+      edu_loan_repay: eduRepay,
+      loan_interest: Number(loan_interest || 0),
+      edu_interest: Number(edu_interest || 0)
+    }]);
+    if (remErr) throw remErr;
+
+    // 3. Update Member Master Balances
     const { data: member, error: memErr } = await supabase
       .from('members')
       .select('*')
@@ -391,15 +405,13 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, async (req, res
 
     if (memErr || !member) return res.status(404).json({ error: 'Member not found' });
 
-    // 3. Calculate updated cumulative balances
     const newThrift = Number(member.thrift_savings || 0) + thrift;
     const newShares = Number(member.share_capital || 0) + shares;
     const newSpecial = Number(member.special_deposit || 0) + special;
-    const newCapMob = Number(member.cap_mob || member.cap_mobilization || 0) + mob;
-    const newLoanBal = Math.max(0, Number(member.loan_balance || member.normal_loan_bal || 0) - loanRepay);
-    const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || member.edu_loan_bal || 0) - eduRepay);
+    const newCapMob = Number(member.cap_mob || 0) + mob;
+    const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
+    const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
 
-    // 4. Update member master account balances
     const { error: updateErr } = await supabase
       .from('members')
       .update({
@@ -458,17 +470,16 @@ app.post('/api/admin/add-member', authenticateToken, async (req, res) => {
     const cleanNo = member_no.trim();
     const { error } = await supabase.from('members').insert([{
       member_no: cleanNo,
-      acc_no: cleanNo,
       full_name: full_name.trim(),
       phone: phone.trim(),
-      role: (role || 'MEMBER').toUpperCase(),
+      role: (role || 'MEMBER').toLowerCase(),
       share_capital: Number(share_capital || 0),
       thrift_savings: Number(thrift_savings || 0),
       special_deposit: Number(special_deposit || 0),
       cap_mob: Number(cap_mob || 0),
       loan_balance: Number(loan_balance || 0),
       edu_loan_balance: Number(edu_loan_balance || 0),
-      is_active: false
+      status: 'ACTIVE'
     }]);
 
     if (error) return res.status(500).json({ error: error.message });
@@ -480,20 +491,20 @@ app.post('/api/admin/add-member', authenticateToken, async (req, res) => {
 
 // 11. ADMIN: POST INCOME & EXPENDITURE (JOURNAL ENTRY)
 app.post('/api/admin/post-journal-entry', authenticateToken, async (req, res) => {
-  const { entry_date, account_category, account_head, description, debit, credit } = req.body;
+  const { entry_date, account_category, account_head, debit, credit } = req.body;
 
   if (!entry_date || !account_category || !account_head) {
-    return res.status(400).json({ error: 'Entry Date, Category, and Account Head are required.' });
+    return res.status(400).json({ error: 'Entry Date, Category, and Particulars are required.' });
   }
 
   try {
     const { error } = await supabase.from('journal_entries').insert([{
       entry_date,
-      account_category: account_category.toUpperCase(),
-      account_head: account_head.trim(),
-      description: description || '',
-      debit: Number(debit || 0),
-      credit: Number(credit || 0)
+      category: account_category.toUpperCase(),
+      particulars: account_head.trim(),
+      debit_amount: Number(debit || 0),
+      credit_amount: Number(credit || 0),
+      financial_year: new Date(entry_date).getFullYear()
     }]);
 
     if (error) return res.status(500).json({ error: error.message });
@@ -536,11 +547,11 @@ app.post('/api/admin/grant-loan', authenticateToken, async (req, res) => {
     const headName = isEdu ? 'EDU LOAN DISBURSED' : 'REGULAR LOAN DISBURSED';
     await supabase.from('journal_entries').insert([{
       entry_date: disbursement_date,
-      account_category: 'ASSET',
-      account_head: headName,
-      description: `Loan granted to ${member.full_name || cleanNo}`,
-      debit: amount,
-      credit: 0
+      category: 'ASSET',
+      particulars: `${headName} - ${member.full_name || cleanNo}`,
+      debit_amount: amount,
+      credit_amount: 0,
+      financial_year: new Date(disbursement_date).getFullYear()
     }]);
 
     res.json({ message: `${loan_type.toUpperCase()} loan of ₦${amount.toLocaleString()} granted to ${cleanNo}!` });
