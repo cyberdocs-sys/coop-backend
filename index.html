@@ -6,9 +6,46 @@
   <title>Dynamic Teachers' MPCS LTD</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  /* Global Loading Overlay */
+  #global-loader {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: sans-serif;
+  }
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #10b981;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .hidden-loader {
+    display: none !important;
+  }
+</style>
 </head>
 <body class="bg-slate-100 font-sans min-h-screen flex flex-col">
 
+  <!-- GLOBAL LOADING SPINNER OVERLAY -->
+<div id="global-loader" class="hidden-loader">
+  <div class="spinner"></div>
+  <p class="mt-3 text-sm font-semibold tracking-wide">Connecting to server, please wait...</p>
+  <p class="text-[11px] text-gray-300 mt-1">(Cold start may take up to 40 seconds if server was sleeping)</p>
+</div>
+  
   <!-- TOP HEADER -->
   <header class="bg-emerald-800 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
     <div class="flex items-center gap-2">
@@ -880,6 +917,55 @@
       localStorage.removeItem('coop_user');
       location.reload();
     }
-  </script>
+     
+  // 1. Loading Overlay Helper Functions
+function showLoading(msg) {
+  const loader = document.getElementById('global-loader');
+  if (loader) {
+    if (msg) loader.querySelector('p').innerText = msg;
+    loader.classList.remove('hidden-loader');
+  }
+}
+
+function hideLoading() {
+  const loader = document.getElementById('global-loader');
+  if (loader) loader.classList.add('hidden-loader');
+}
+
+// Automatically show spinner on all fetch calls (Cold Start support)
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  showLoading();
+  try {
+    const response = await originalFetch(...args);
+    return response;
+  } finally {
+    hideLoading();
+  }
+};
+
+// 2. Phone Hardware Back Button Navigation
+function showScreen(screenId) {
+  document.querySelectorAll('.app-screen').forEach(el => el.classList.add('hidden'));
+  const target = document.getElementById(screenId);
+  if (target) target.classList.remove('hidden');
+
+  if (screenId !== 'dashboard-view') {
+    history.pushState({ screen: screenId }, '', `#${screenId}`);
+  }
+}
+
+window.onpopstate = function(event) {
+  const openModal = document.querySelector('.modal:not(.hidden)');
+  if (openModal) {
+    openModal.classList.add('hidden');
+    return;
+  }
+
+  document.querySelectorAll('.app-screen').forEach(el => el.classList.add('hidden'));
+  const dashboard = document.getElementById('dashboard-view');
+  if (dashboard) dashboard.classList.remove('hidden');
+}
+   </script>
 </body>
 </html>
