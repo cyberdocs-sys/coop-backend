@@ -454,6 +454,26 @@
       }
     }
 
+     function updateUserLastUpdated(createdAtTimestamp) {
+  const updatedSpan = document.getElementById('user-updated');
+  if (!updatedSpan) return;
+
+  if (createdAtTimestamp) {
+    const dateObj = new Date(createdAtTimestamp);
+    
+    // Formats into e.g. "28 Oct 2026"
+    const formattedDate = dateObj.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+
+    updatedSpan.textContent = `Updated: ${formattedDate}`;
+  } else {
+    updatedSpan.textContent = 'Updated: N/A';
+  }
+     }
+     
     function showScreen(screenId) {
       ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view', 'financial-statements-view', 'post-remittance-view'].forEach(id => {
         const el = document.getElementById(id);
@@ -618,7 +638,7 @@
         if (res.ok) {
           document.getElementById('user-name').innerText = data.full_name || 'Member';
           document.getElementById('user-acc').innerText = data.member_no || '-';
-          document.getElementById('user-updated').innerText = data.updated_at ? new Date(data.updated_at).toLocaleDateString('en-GB') : 'Initial 2025';
+          document.getElementById('user-updated').innerText = data.created_at ? 'Updated: ' + new Date(data.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Updated: N/A';
 
           document.getElementById('bal-thrift').innerText = `₦${Number(data.thrift_savings || 0).toLocaleString()}`;
           document.getElementById('bal-shares').innerText = `₦${Number(data.share_capital || 0).toLocaleString()}`;
