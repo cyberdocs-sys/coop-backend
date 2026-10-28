@@ -3,1136 +3,863 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DTMPCS - Cooperative Management System</title>
+  <title>Dynamic Teachers' MPCS LTD</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    @media print {
-      body * { visibility: hidden; }
-      #ledgerPrintModal, #ledgerPrintModal * { visibility: visible; }
-      #ledgerPrintModal { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: white; padding: 0; }
-      .no-print { display: none !important; }
-    }
-  </style>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-100 font-sans min-h-screen flex flex-col">
 
-  <!-- TOP NAVBAR -->
-  <header class="bg-emerald-900 text-white shadow-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center space-x-3 cursor-pointer" onclick="showScreen('dashboard-view')">
-        <div class="bg-white text-emerald-900 p-2 rounded-lg font-black text-xl tracking-wider">DTMPCS</div>
-        <div>
-          <h1 class="text-sm font-bold leading-tight">Dynamic Teachers' MPCS Ltd.</h1>
-          <p class="text-[10px] text-emerald-200">Multipurpose Cooperative Society</p>
-        </div>
-      </div>
-      <button id="logout-btn" onclick="logout()" class="hidden bg-emerald-800 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded-lg border border-emerald-600 font-medium transition flex items-center gap-1.5">
-        <i class="fa-solid fa-right-from-bracket"></i> Logout
-      </button>
+  <!-- TOP HEADER -->
+  <header class="bg-emerald-800 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-building-columns text-yellow-400 text-xl"></i>
+      <h1 class="font-bold text-sm sm:text-base tracking-wide">Dynamic Teachers' MPCS LTD</h1>
     </div>
+    <button id="logout-btn" onclick="logout()" class="hidden bg-emerald-900 hover:bg-emerald-950 px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-700">Logout</button>
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+  <main class="flex-1 max-w-lg w-full mx-auto p-4 flex flex-col">
 
-    <!-- 1. LOGIN VIEW -->
-    <div id="login-view" class="max-w-sm mx-auto bg-white p-6 rounded-2xl shadow-xl border border-slate-200 mt-8">
-      <div class="text-center mb-6">
-        <div class="w-12 h-12 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto mb-2 text-xl">
-          <i class="fa-solid fa-user-lock"></i>
+    <!-- LOGIN VIEW -->
+    <div id="login-view" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 my-auto">
+      <div class="text-center space-y-2">
+        <div class="flex justify-center">
+          <img src="logo.jpg" alt="Dynamic Teachers Logo" class="w-20 h-20 object-contain rounded-full border shadow-sm" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
         </div>
-        <h2 class="text-xl font-bold text-slate-800">Member Login</h2>
-        <p class="text-xs text-slate-500">Access your cooperative financial ledger</p>
+        <h2 class="text-xl font-extrabold text-slate-800">Dynamic Teachers' MPCS LTD</h2>
+        <p class="text-xs font-semibold text-emerald-800 tracking-wide">Sapele • Member & Executive Portal</p>
       </div>
-      <form onsubmit="handleLogin(event)" class="space-y-4">
+
+      <form onsubmit="handleLogin(event)" class="space-y-4 pt-2">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Phone Number</label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs"><i class="fa-solid fa-phone"></i></span>
-            <input type="tel" id="login-phone" placeholder="08012345678" required class="w-full pl-9 pr-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-          </div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">PHONE NUMBER</label>
+          <input type="tel" id="login-phone" required placeholder="08037844465" class="w-full p-3 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 outline-none font-medium">
         </div>
+
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">PASSWORD</label>
+            <button type="button" onclick="showScreen('reset-view')" class="text-xs text-emerald-700 font-bold hover:underline">Forgot?</button>
+          </div>
           <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs"><i class="fa-solid fa-lock"></i></span>
-            <input type="password" id="login-password" placeholder="••••••••" required class="w-full pl-9 pr-9 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-            <button type="button" onclick="togglePasswordVisibility('login-password', 'login-eye')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs hover:text-slate-600">
-              <i id="login-eye" class="fa-solid fa-eye"></i>
+            <input type="password" id="login-password" required placeholder="••••••••" class="w-full p-3 pr-10 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 outline-none font-medium">
+            <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-login')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+              <i id="eye-login" class="fa-solid fa-eye text-sm"></i>
             </button>
           </div>
         </div>
-        <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">LOG IN</button>
+
+        <button type="submit" class="w-full bg-emerald-700 text-white font-extrabold py-3.5 rounded-xl text-sm hover:bg-emerald-800 shadow-md tracking-wider">
+          LOGIN TO PASSBOOK
+        </button>
       </form>
-      <div class="mt-6 pt-4 border-t text-center space-y-2 text-xs">
-        <p><a href="#" onclick="showScreen('activate-view')" class="text-emerald-700 font-bold hover:underline">First time user? Activate Account</a></p>
-        <p><a href="#" onclick="showScreen('reset-view')" class="text-slate-500 hover:underline">Forgot password? Reset here</a></p>
+
+      <div class="pt-2 border-t text-center">
+        <button onclick="showScreen('activate-view')" class="w-full border-2 border-emerald-700 text-emerald-800 font-bold py-2.5 rounded-xl text-xs hover:bg-emerald-50 tracking-wide">
+          ACTIVATE MEMBER ACCOUNT
+        </button>
       </div>
     </div>
 
-    <!-- 2. ACTIVATE ACCOUNT VIEW -->
-    <div id="activate-view" class="hidden max-w-sm mx-auto bg-white p-6 rounded-2xl shadow-xl border border-slate-200 mt-8">
-      <div class="text-center mb-6">
-        <h2 class="text-xl font-bold text-slate-800">Activate Account</h2>
-        <p class="text-xs text-slate-500">Set your password using your registered phone number</p>
+    <!-- ACCOUNT ACTIVATION VIEW -->
+    <div id="activate-view" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 my-auto">
+      <div class="text-center space-y-1">
+        <h2 class="text-xl font-bold text-slate-800">Activate Member Account</h2>
+        <p class="text-xs text-slate-500">Create a password for your digital passbook</p>
       </div>
-      <form onsubmit="handleActivation(event)" class="space-y-4">
+
+      <form onsubmit="handleActivation(event)" class="space-y-3">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Registered Phone Number</label>
-          <input type="tel" id="act-phone" placeholder="08012345678" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+          <input type="tel" id="act-phone" required placeholder="e.g. 08037844465" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Create Password</label>
           <div class="relative">
-            <input type="password" id="act-password" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-            <button type="button" onclick="togglePasswordVisibility('act-password', 'act-eye')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs">
-              <i id="act-eye" class="fa-solid fa-eye"></i>
+            <input type="password" id="act-password" required placeholder="••••••••" class="w-full p-2.5 pr-10 border rounded-lg text-sm bg-slate-50">
+            <button type="button" onclick="togglePasswordVisibility('act-password', 'eye-act-1')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">
+              <i id="eye-act-1" class="fa-solid fa-eye text-sm"></i>
             </button>
           </div>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Confirm Password</label>
-          <input type="password" id="act-confirm" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+          <div class="relative">
+            <input type="password" id="act-confirm" required placeholder="••••••••" class="w-full p-2.5 pr-10 border rounded-lg text-sm bg-slate-50">
+            <button type="button" onclick="togglePasswordVisibility('act-confirm', 'eye-act-2')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">
+              <i id="eye-act-2" class="fa-solid fa-eye text-sm"></i>
+            </button>
+          </div>
         </div>
-        <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">ACTIVATE ACCOUNT</button>
+        <button type="submit" class="w-full bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">COMPLETE ACTIVATION</button>
       </form>
-      <div class="mt-4 text-center text-xs">
-        <a href="#" onclick="showScreen('login-view')" class="text-slate-500 hover:underline"><i class="fa-solid fa-arrow-left"></i> Back to Login</a>
-      </div>
+      <button onclick="showScreen('login-view')" class="w-full text-xs text-slate-500 hover:underline">Back to Login</button>
     </div>
 
-    <!-- 3. RESET PASSWORD VIEW -->
-    <div id="reset-view" class="hidden max-w-sm mx-auto bg-white p-6 rounded-2xl shadow-xl border border-slate-200 mt-8">
-      <div class="text-center mb-6">
-        <h2 class="text-xl font-bold text-slate-800">Reset Password</h2>
-        <p class="text-xs text-slate-500">Enter your registered phone and new password</p>
+    <!-- FORGOT PASSWORD VIEW -->
+    <div id="reset-view" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 my-auto">
+      <div class="text-center space-y-1">
+        <h2 class="text-xl font-bold text-slate-800">Account Recovery</h2>
+        <p class="text-xs text-slate-500">Reset your password using your registered phone</p>
       </div>
-      <form onsubmit="handleResetPassword(event)" class="space-y-4">
+
+      <form onsubmit="handleResetPassword(event)" class="space-y-3">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Registered Phone Number</label>
-          <input type="tel" id="reset-phone" placeholder="08012345678" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+          <input type="tel" id="reset-phone" required placeholder="e.g. 08037844465" class="w-full p-2.5 border rounded-lg text-sm bg-slate-50">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">New Password</label>
           <div class="relative">
-            <input type="password" id="reset-password" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-            <button type="button" onclick="togglePasswordVisibility('reset-password', 'reset-eye')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs">
-              <i id="reset-eye" class="fa-solid fa-eye"></i>
+            <input type="password" id="reset-password" required placeholder="••••••••" class="w-full p-2.5 pr-10 border rounded-lg text-sm bg-slate-50">
+            <button type="button" onclick="togglePasswordVisibility('reset-password', 'eye-reset')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">
+              <i id="eye-reset" class="fa-solid fa-eye text-sm"></i>
             </button>
           </div>
         </div>
-        <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">UPDATE PASSWORD</button>
+        <button type="submit" class="w-full bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">RESET PASSWORD</button>
       </form>
-      <div class="mt-4 text-center text-xs">
-        <a href="#" onclick="showScreen('login-view')" class="text-slate-500 hover:underline"><i class="fa-solid fa-arrow-left"></i> Back to Login</a>
+      <button onclick="showScreen('login-view')" class="w-full text-xs text-slate-500 hover:underline">Back to Login</button>
+    </div>
+
+    <!-- MEMBER DASHBOARD VIEW -->
+    <div id="dashboard-view" class="hidden space-y-4">
+      <div class="bg-gradient-to-r from-emerald-800 to-emerald-600 text-white p-4 rounded-2xl shadow-md space-y-1">
+        <p class="text-[10px] uppercase font-semibold text-emerald-200 tracking-wider">Member Passbook</p>
+        <h2 id="user-name" class="text-lg font-bold">Loading...</h2>
+        <div class="flex justify-between items-center text-xs text-emerald-100 pt-1 border-t border-emerald-700/60">
+          <span>Acc No: <strong id="user-acc" class="text-white">-</strong></span>
+          <span class="text-[10px] text-emerald-200"><i class="fa-solid fa-clock mr-1 text-[9px]"></i><span id="user-updated">Updated: -</span></span>
+        </div>
+      </div>
+
+      <!-- 6 BALANCES -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-600">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Thrift Savings</p>
+          <p id="bal-thrift" class="text-base font-extrabold text-blue-700">₦0.00</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-teal-600">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Share Capital</p>
+          <p id="bal-shares" class="text-base font-extrabold text-teal-700">₦0.00</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-purple-600">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Cap Mobilization</p>
+          <p id="bal-capmob" class="text-base font-extrabold text-purple-700">₦0.00</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-indigo-600">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Special Deposit</p>
+          <p id="bal-special" class="text-base font-extrabold text-indigo-700">₦0.00</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-amber-600">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Normal Loan Bal</p>
+          <p id="bal-loan" class="text-base font-extrabold text-amber-700">₦0.00</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-rose-600">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Edu Loan Bal</p>
+          <p id="bal-eduloan" class="text-base font-extrabold text-rose-700">₦0.00</p>
+        </div>
+      </div>
+
+      <button onclick="showScreen('schedule-view')" class="w-full bg-slate-900 text-white p-3.5 rounded-xl font-semibold text-xs shadow-md flex items-center justify-center gap-2 hover:bg-slate-800">
+        <i class="fa-solid fa-table-cells text-emerald-400"></i> View 12-Month Payment Distribution Schedule
+      </button>
+
+      <!-- ADMIN TOOLS -->
+      <div id="admin-tools" class="hidden bg-slate-800 text-white p-4 rounded-xl space-y-2">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Secretary Management Tools</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="showScreen('post-remittance-view')" class="bg-emerald-700 hover:bg-emerald-600 p-2.5 rounded-lg text-xs font-semibold text-left col-span-2 flex items-center gap-2">
+            <i class="fa-solid fa-money-bill-transfer text-yellow-300"></i> Post Monthly Remittance & Payment Date
+          </button>
+          <button onclick="showScreen('ledger-search-view')" class="bg-slate-700 p-2.5 rounded-lg text-xs font-semibold hover:bg-slate-600 text-left">
+            <i class="fa-solid fa-book mr-1 text-emerald-400"></i> Member Register
+          </button>
+          <button onclick="showScreen('executive-summary-view')" class="bg-slate-700 p-2.5 rounded-lg text-xs font-semibold hover:bg-slate-600 text-left">
+            <i class="fa-solid fa-chart-pie mr-1 text-emerald-400"></i> Executive Summary
+          </button>
+          <button onclick="showScreen('financial-statements-view')" class="bg-slate-700 p-2.5 rounded-lg text-xs font-semibold hover:bg-slate-600 text-left col-span-2">
+            <i class="fa-solid fa-file-invoice-dollar mr-1 text-emerald-400"></i> Statutory Reports (Income/Exp, Trial Bal, Bal Sheet)
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- 4. MEMBER DASHBOARD VIEW -->
-    <div id="dashboard-view" class="hidden space-y-6">
-      <div class="bg-gradient-to-r from-emerald-900 to-emerald-800 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <!-- POST MONTHLY REMITTANCE VIEW -->
+    <div id="post-remittance-view" class="hidden space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
         <div>
-          <p class="text-emerald-200 text-xs font-medium">Welcome Back,</p>
-          <h2 id="user-name" class="text-2xl font-black tracking-tight">Member</h2>
-          <p class="text-xs text-emerald-300 mt-0.5">Member No: <span id="user-acc" class="font-bold text-white">-</span></p>
+          <h3 class="font-bold text-slate-800 text-sm">Post Monthly Remittance</h3>
+          <p class="text-[10px] text-slate-500">Record 2026 monthly payments & update ledger</p>
         </div>
-        <button onclick="showScreen('schedule-view')" class="bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2">
-          <i class="fa-solid fa-calendar-days"></i> View 12-Month Schedule
-        </button>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-emerald-700 font-semibold">Back</button>
       </div>
 
-      <!-- PERSONAL LEDGER CARDS -->
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div class="bg-white p-4 rounded-xl border shadow-sm">
-          <p class="text-[11px] font-semibold text-slate-400 uppercase">Thrift Savings</p>
-          <p id="bal-thrift" class="text-lg font-black text-slate-800 mt-1">₦0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border shadow-sm">
-          <p class="text-[11px] font-semibold text-slate-400 uppercase">Share Capital</p>
-          <p id="bal-shares" class="text-lg font-black text-slate-800 mt-1">₦0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border shadow-sm">
-          <p class="text-[11px] font-semibold text-slate-400 uppercase">Capital Mob.</p>
-          <p id="bal-capmob" class="text-lg font-black text-slate-800 mt-1">₦0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border shadow-sm">
-          <p class="text-[11px] font-semibold text-slate-400 uppercase">Special Deposit</p>
-          <p id="bal-special" class="text-lg font-black text-slate-800 mt-1">₦0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border shadow-sm border-l-4 border-l-amber-500">
-          <p class="text-[11px] font-semibold text-amber-600 uppercase">Regular Loan Bal.</p>
-          <p id="bal-loan" class="text-lg font-black text-amber-700 mt-1">₦0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border shadow-sm border-l-4 border-l-rose-500">
-          <p class="text-[11px] font-semibold text-rose-600 uppercase">Edu Loan Bal.</p>
-          <p id="bal-eduloan" class="text-lg font-black text-rose-700 mt-1">₦0</p>
-        </div>
-      </div>
-
-      <!-- ADMIN / SECRETARY TOOLS (RBAC PROTECTED) -->
-      <div id="admin-tools" class="hidden bg-slate-200/60 p-5 rounded-2xl border border-slate-300 space-y-3">
-        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-          <i class="fa-solid fa-user-shield text-emerald-800"></i> Executive Management Tools
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          <button onclick="showScreen('post-remittance-view')" class="bg-emerald-800 hover:bg-emerald-700 text-white p-3 rounded-xl text-xs font-bold shadow-sm transition flex flex-col items-center justify-center gap-1">
-            <i class="fa-solid fa-file-circle-plus text-base"></i> Post Remittance
-          </button>
-          <button onclick="showScreen('executive-summary-view')" class="bg-white hover:bg-slate-50 text-slate-800 border p-3 rounded-xl text-xs font-bold shadow-sm transition flex flex-col items-center justify-center gap-1">
-            <i class="fa-solid fa-chart-pie text-emerald-700 text-base"></i> Executive Summary
-          </button>
-          <button onclick="showScreen('financial-statements-view')" class="bg-white hover:bg-slate-50 text-slate-800 border p-3 rounded-xl text-xs font-bold shadow-sm transition flex flex-col items-center justify-center gap-1">
-            <i class="fa-solid fa-book-journal-whills text-emerald-700 text-base"></i> Financial Statements
-          </button>
-          <button onclick="showScreen('ledger-search-view')" class="bg-white hover:bg-slate-50 text-slate-800 border p-3 rounded-xl text-xs font-bold shadow-sm transition flex flex-col items-center justify-center gap-1">
-            <i class="fa-solid fa-magnifying-glass text-emerald-700 text-base"></i> Member Ledgers
-          </button>
-        </div>
-        <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-300">
-          <button onclick="openModal('onboardModal')" class="bg-slate-800 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium hover:bg-slate-700 transition">
-            <i class="fa-solid fa-user-plus"></i> Onboard Member
-          </button>
-          <button onclick="openModal('loanModal')" class="bg-slate-800 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium hover:bg-slate-700 transition">
-            <i class="fa-solid fa-hand-holding-dollar"></i> Grant Loan
-          </button>
-          <button onclick="openModal('journalModal')" class="bg-slate-800 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium hover:bg-slate-700 transition">
-            <i class="fa-solid fa-pen-to-square"></i> Manual Journal Entry
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5. MEMBER 12-MONTH SCHEDULE VIEW -->
-    <div id="schedule-view" class="hidden space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-bold text-slate-800">Your 12-Month Deduction Schedule</h2>
-        <button onclick="showScreen('dashboard-view')" class="text-xs bg-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-300 font-semibold">Back</button>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm border overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr class="bg-slate-800 text-white font-semibold">
-              <th class="p-2.5">Month</th>
-              <th class="p-2.5 text-right">Total Paid</th>
-              <th class="p-2.5 text-right">Thrift</th>
-              <th class="p-2.5 text-right">Shares</th>
-              <th class="p-2.5 text-right">Social Dues</th>
-              <th class="p-2.5 text-right">Regular Loan</th>
-              <th class="p-2.5 text-right">Edu Loan</th>
-              <th class="p-2.5 text-right">Special Dep.</th>
-            </tr>
-          </thead>
-          <tbody id="schedule-table-body" class="divide-y text-slate-600"></tbody>
-          <tfoot id="schedule-table-foot"></tfoot>
-        </table>
-      </div>
-    </div>
-
-    <!-- 6. POST REMITTANCE VIEW -->
-    <div id="post-remittance-view" class="hidden max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-xl border border-slate-200 space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h2 class="text-lg font-bold text-slate-800">Post Monthly Remittance</h2>
-        <button onclick="showScreen('dashboard-view')" class="text-xs text-slate-500 hover:underline">Cancel</button>
-      </div>
-      <form onsubmit="handlePostRemittance(event)" class="space-y-3 text-xs">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Member No.</label>
-            <input type="text" id="post-member-no" placeholder="DTMPCS/042" required class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-600">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Payment Date</label>
-            <input type="date" id="post-payment-date" required class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-600">
-          </div>
-        </div>
+      <form onsubmit="handlePostRemittance(event)" class="bg-white p-4 rounded-xl border shadow-sm space-y-3">
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Deduction Month & Year</label>
-          <input type="text" id="post-month-year" placeholder="JAN 2026" required class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-600">
+          <label class="block text-xs font-bold text-slate-700 mb-1">Select Member Account</label>
+          <input type="text" id="post-member-no" required placeholder="Enter DTMPCS No (e.g. DTMPCS-0008)" class="w-full p-2.5 border rounded-lg text-xs bg-slate-50 font-medium">
         </div>
-        <div class="grid grid-cols-2 gap-3 pt-2">
+
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block font-medium text-slate-600">Thrift Savings (₦)</label>
-            <input type="number" id="post-thrift" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Payment Date</label>
+            <input type="date" id="post-payment-date" required class="w-full p-2.5 border rounded-lg text-xs bg-slate-50 font-medium">
           </div>
           <div>
-            <label class="block font-medium text-slate-600">Share Capital (₦)</label>
-            <input type="number" id="post-shares" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Schedule Month</label>
+            <select id="post-month-year" required class="w-full p-2.5 border rounded-lg text-xs bg-slate-50 font-medium">
+              <option value="JAN 2026">JAN 2026</option>
+              <option value="FEB 2026">FEB 2026</option>
+              <option value="MAR 2026">MAR 2026</option>
+              <option value="APR 2026">APR 2026</option>
+              <option value="MAY 2026">MAY 2026</option>
+              <option value="JUN 2026">JUN 2026</option>
+              <option value="JUL 2026">JUL 2026</option>
+              <option value="AUG 2026">AUG 2026</option>
+              <option value="SEP 2026">SEP 2026</option>
+              <option value="OCT 2026">OCT 2026</option>
+              <option value="NOV 2026">NOV 2026</option>
+              <option value="DEC 2026">DEC 2026</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600">Thrift Savings (₦)</label>
+            <input type="number" id="post-thrift" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg text-xs bg-slate-50">
           </div>
           <div>
-            <label class="block font-medium text-slate-600">Social Dues (₦)</label>
-            <input type="number" id="post-dues" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg">
+            <label class="block text-[11px] font-semibold text-slate-600">Share Capital (₦)</label>
+            <input type="number" id="post-shares" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg text-xs bg-slate-50">
           </div>
           <div>
-            <label class="block font-medium text-slate-600">Capital Mob. (₦)</label>
-            <input type="number" id="post-capmob" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg">
+            <label class="block text-[11px] font-semibold text-slate-600">Social Dues (₦)</label>
+            <input type="number" id="post-dues" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg text-xs bg-slate-50">
           </div>
           <div>
-            <label class="block font-medium text-slate-600">Regular Loan Repay (₦)</label>
-            <input type="number" id="post-loan" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg">
+            <label class="block text-[11px] font-semibold text-slate-600">Normal Loan Repay (₦)</label>
+            <input type="number" id="post-loan" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg text-xs bg-slate-50">
           </div>
           <div>
-            <label class="block font-medium text-slate-600">Edu Loan Repay (₦)</label>
-            <input type="number" id="post-eduloan" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg">
+            <label class="block text-[11px] font-semibold text-slate-600">Edu Loan Repay (₦)</label>
+            <input type="number" id="post-eduloan" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg text-xs bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600">Special Deposit (₦)</label>
+            <input type="number" id="post-special" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg text-xs bg-slate-50">
           </div>
           <div class="col-span-2">
-            <label class="block font-medium text-slate-600">Special Deposit (₦)</label>
-            <input type="number" id="post-special" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg">
+            <label class="block text-[11px] font-semibold text-slate-600">Cap Mobilization (₦)</label>
+            <input type="number" id="post-capmob" oninput="calcTotal()" placeholder="0" class="w-full p-2 border rounded-lg text-xs bg-slate-50">
           </div>
         </div>
-        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 flex justify-between items-center mt-3">
-          <span class="font-bold text-emerald-900">Total Remittance:</span>
-          <span id="post-total-val" class="font-black text-emerald-700 text-base">₦0</span>
+
+        <div class="bg-emerald-50 p-2.5 rounded-lg flex justify-between items-center font-bold text-xs text-emerald-900 border border-emerald-200">
+          <span>Total Monthly Deduction:</span>
+          <span id="post-total-val" class="text-sm font-extrabold text-emerald-800">₦0.00</span>
         </div>
-        <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition">SUBMIT MONTHLY REMITTANCE</button>
+
+        <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold py-3 rounded-xl text-xs shadow tracking-wider uppercase">
+          SUBMIT MONTHLY REMITTANCE
+        </button>
       </form>
     </div>
 
-    <!-- 7. EXECUTIVE SUMMARY VIEW -->
-    <div id="executive-summary-view" class="hidden space-y-4">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <h2 class="text-lg font-bold text-slate-800">16-Point Executive Financial Summary</h2>
-        <div class="flex items-center gap-2">
-          <input type="text" id="summary-month-filter" placeholder="e.g. JAN 2026" class="p-1.5 border rounded-lg text-xs">
-          <button onclick="fetchExecutiveSummary()" class="bg-emerald-800 text-white text-xs px-3 py-1.5 rounded-lg font-medium">Filter</button>
-          <button onclick="showScreen('dashboard-view')" class="text-xs bg-slate-200 px-3 py-1.5 rounded-lg font-medium">Back</button>
+    <!-- 12-MONTH PAYMENT MATRIX VIEW -->
+    <div id="schedule-view" class="hidden space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm">Monthly Deduction Schedule</h3>
+          <p class="text-[10px] text-slate-500">Breakdown of monthly remittances & deductions</p>
         </div>
-      </div>
-      <div id="executive-summary-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-    </div>
-
-    <!-- 8. FINANCIAL STATEMENTS VIEW -->
-    <div id="financial-statements-view" class="hidden space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-bold text-slate-800">Statutory Financial Statements</h2>
-        <button onclick="showScreen('dashboard-view')" class="text-xs bg-slate-200 px-3 py-1.5 rounded-lg font-medium">Back</button>
-      </div>
-      <div class="flex bg-slate-200 p-1 rounded-xl text-xs font-semibold gap-1">
-        <button id="tab-inc-exp" onclick="switchStatementTab('inc-exp')" class="flex-1 py-2 rounded-lg bg-emerald-800 text-white shadow">Income & Expenditure</button>
-        <button id="tab-trial-bal" onclick="switchStatementTab('trial-bal')" class="flex-1 py-2 rounded-lg text-slate-700 hover:bg-white">Trial Balance</button>
-        <button id="tab-bal-sheet" onclick="switchStatementTab('bal-sheet')" class="flex-1 py-2 rounded-lg text-slate-700 hover:bg-white">Balance Sheet</button>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-emerald-700 font-semibold">Back</button>
       </div>
 
-      <!-- Income & Expenditure Section -->
-      <div id="section-inc-exp" class="space-y-3 bg-white p-4 rounded-xl border">
-        <h3 class="font-bold text-xs uppercase text-slate-500 border-b pb-1">Income Account</h3>
-        <div id="report-incomes" class="text-xs space-y-1"></div>
-        <div class="flex justify-between font-bold text-xs pt-1 border-t"><span>Total Income:</span><span id="tot-income" class="text-emerald-700">₦0</span></div>
-        <h3 class="font-bold text-xs uppercase text-slate-500 border-b pb-1 pt-3">Expenditure Account</h3>
-        <div id="report-expenditures" class="text-xs space-y-1"></div>
-        <div class="flex justify-between font-bold text-xs pt-1 border-t"><span>Total Expenditure:</span><span id="tot-expenditure" class="text-rose-700">₦0</span></div>
-        <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200 flex justify-between font-black text-sm mt-3">
-          <span>Net Surplus / Deficit:</span><span id="net-surplus-val" class="text-emerald-800">₦0</span>
-        </div>
-      </div>
-
-      <!-- Trial Balance Section -->
-      <div id="section-trial-bal" class="hidden bg-white rounded-xl border overflow-x-auto">
-        <table class="w-full text-xs text-left">
+      <div class="overflow-x-auto border rounded-xl shadow-sm bg-white">
+        <table class="w-full text-left text-[11px] border-collapse min-w-[600px]">
           <thead>
-            <tr class="bg-slate-800 text-white font-semibold">
-              <th class="p-2">Account Particulars / Head</th>
-              <th class="p-2 text-right">Debit (₦)</th>
-              <th class="p-2 text-right">Credit (₦)</th>
+            <tr class="bg-slate-900 text-white font-semibold">
+              <th class="p-2.5 border-b">Month</th>
+              <th class="p-2.5 border-b text-right">Total (₦)</th>
+              <th class="p-2.5 border-b text-right">Thrift</th>
+              <th class="p-2.5 border-b text-right">Shares</th>
+              <th class="p-2.5 border-b text-right">Social Dues</th>
+              <th class="p-2.5 border-b text-right">Normal Loan</th>
+              <th class="p-2.5 border-b text-right">Edu Loan</th>
+              <th class="p-2.5 border-b text-right">Special Dep.</th>
             </tr>
           </thead>
-          <tbody id="trial-bal-body" class="divide-y text-slate-700"></tbody>
-          <tfoot id="trial-bal-foot"></tfoot>
+          <tbody id="schedule-table-body" class="divide-y bg-white"></tbody>
+          <tfoot id="schedule-table-foot" class="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900"></tfoot>
         </table>
       </div>
 
-      <!-- Balance Sheet Section -->
-      <div id="section-bal-sheet" class="hidden space-y-3 bg-white p-4 rounded-xl border text-xs">
-        <h3 class="font-bold text-xs uppercase text-slate-500 border-b pb-1">Assets (Applications of Funds)</h3>
-        <div id="bs-assets" class="space-y-1"></div>
-        <div class="flex justify-between font-bold pt-1 border-t text-emerald-800"><span>Total Assets:</span><span id="bs-tot-assets">₦0</span></div>
-        <h3 class="font-bold text-xs uppercase text-slate-500 border-b pb-1 pt-3">Liabilities & Funds</h3>
-        <div id="bs-liabilities" class="space-y-1"></div>
-        <h3 class="font-bold text-xs uppercase text-slate-500 border-b pb-1 pt-3">Equity Reserves</h3>
-        <div id="bs-equity" class="space-y-1"></div>
-        <div class="flex justify-between font-bold pt-1 border-t text-emerald-800"><span>Total Liabilities & Equity:</span><span id="bs-tot-liab-equity">₦0</span></div>
-      </div>
+      <button onclick="window.print()" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs">PRINT MONTHLY SCHEDULE</button>
     </div>
 
-    <!-- 9. MEMBER LEDGER SEARCH VIEW -->
-    <div id="ledger-search-view" class="hidden space-y-4 max-w-2xl mx-auto">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-bold text-slate-800">Member Personal Ledgers</h2>
-        <button onclick="showScreen('dashboard-view')" class="text-xs bg-slate-200 px-3 py-1.5 rounded-lg font-medium">Back</button>
+    <!-- SECRETARY EXECUTIVE SUMMARY VIEW -->
+    <div id="executive-summary-view" class="hidden space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm">Monthly Executive Summary</h3>
+          <p class="text-[10px] text-slate-500">16-Point Financial Control Matrix</p>
+        </div>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-emerald-700 font-semibold">Back</button>
       </div>
-      <div class="flex gap-2">
-        <input type="text" id="member-search-input" onkeyup="searchMemberLedger()" placeholder="Search by name, member no, or phone..." class="flex-1 p-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-600">
-        <button onclick="openModal('ledgerPrintModal')" class="bg-emerald-800 text-white text-xs px-3 py-2 rounded-xl font-bold">Print Ledger</button>
+
+      <div class="bg-white p-2.5 rounded-xl border">
+        <select id="summary-month-filter" onchange="fetchExecutiveSummary()" class="w-full text-xs p-2 border rounded-lg bg-slate-50 font-medium">
+          <option value="">All Months (YTD Cumulative)</option>
+          <option value="JAN 2026">JAN 2026</option>
+          <option value="FEB 2026">FEB 2026</option>
+          <option value="MAR 2026">MAR 2026</option>
+          <option value="APR 2026">APR 2026</option>
+          <option value="MAY 2026">MAY 2026</option>
+          <option value="JUN 2026">JUN 2026</option>
+          <option value="JUL 2026">JUL 2026</option>
+          <option value="AUG 2026">AUG 2026</option>
+          <option value="SEP 2026">SEP 2026</option>
+          <option value="OCT 2026">OCT 2026</option>
+          <option value="NOV 2026">NOV 2026</option>
+          <option value="DEC 2026">DEC 2026</option>
+        </select>
       </div>
-      <div id="ledger-results" class="space-y-2"></div>
+
+      <div id="executive-summary-grid" class="space-y-3"></div>
+      <button onclick="window.print()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">PRINT EXECUTIVE SUMMARY</button>
+    </div>
+
+    <!-- MEMBER REGISTER SEARCH VIEW -->
+    <div id="ledger-search-view" class="hidden space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm">Member Personal Ledger Registry</h3>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-emerald-700 font-semibold">Back</button>
+      </div>
+      <input type="text" id="member-search-input" onkeyup="searchMemberLedger()" placeholder="Search name, phone, or DTMPCS no..." class="w-full p-2.5 border rounded-lg text-xs bg-white">
+      <div id="ledger-results" class="space-y-2 max-h-[450px] overflow-y-auto"></div>
+    </div>
+
+    <!-- STATUTORY FINANCIAL STATEMENTS VIEW -->
+    <div id="financial-statements-view" class="hidden space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm">Financial Statements & Accounts</h3>
+          <p class="text-[10px] text-slate-500">AGM Financial Reporting Suite</p>
+        </div>
+        <button onclick="showScreen('dashboard-view')" class="text-xs text-emerald-700 font-semibold">Back</button>
+      </div>
+
+      <div class="flex gap-1 bg-slate-200 p-1 rounded-xl text-xs font-bold">
+        <button onclick="switchStatementTab('inc-exp')" id="tab-inc-exp" class="flex-1 py-2 rounded-lg bg-emerald-800 text-white shadow">Income & Exp</button>
+        <button onclick="switchStatementTab('trial-bal')" id="tab-trial-bal" class="flex-1 py-2 rounded-lg text-slate-700 hover:bg-white">Trial Balance</button>
+        <button onclick="switchStatementTab('bal-sheet')" id="tab-bal-sheet" class="flex-1 py-2 rounded-lg text-slate-700 hover:bg-white">Balance Sheet</button>
+      </div>
+
+      <div id="section-inc-exp" class="space-y-3 bg-white p-3 rounded-xl border shadow-sm">
+        <h4 class="text-xs font-extrabold text-slate-800 border-b pb-1">Statement of Income & Expenditure</h4>
+        <div class="space-y-1">
+          <p class="text-[11px] font-bold text-emerald-800 uppercase">A. Incomes</p>
+          <div id="report-incomes" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+          <div class="flex justify-between font-extrabold text-xs text-emerald-800 pt-1">
+            <span>Total Operating Income:</span>
+            <span id="tot-income">₦0.00</span>
+          </div>
+        </div>
+        <div class="space-y-1 pt-2 border-t">
+          <p class="text-[11px] font-bold text-rose-800 uppercase">B. Expenditures</p>
+          <div id="report-expenditures" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+          <div class="flex justify-between font-extrabold text-xs text-rose-800 pt-1">
+            <span>Total Operating Expenditure:</span>
+            <span id="tot-expenditure">₦0.00</span>
+          </div>
+        </div>
+        <div class="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 flex justify-between font-extrabold text-sm text-emerald-900 mt-2">
+          <span>NET SURPLUS / (DEFICIT):</span>
+          <span id="net-surplus-val">₦0.00</span>
+        </div>
+      </div>
+
+      <div id="section-trial-bal" class="hidden space-y-3 bg-white p-3 rounded-xl border shadow-sm">
+        <h4 class="text-xs font-extrabold text-slate-800 border-b pb-1">Trial Balance Schedule</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-[11px] border-collapse">
+            <thead>
+              <tr class="bg-slate-900 text-white">
+                <th class="p-2">Account Head</th>
+                <th class="p-2 text-right">Debit (₦)</th>
+                <th class="p-2 text-right">Credit (₦)</th>
+              </tr>
+            </thead>
+            <tbody id="trial-bal-body" class="divide-y text-slate-700"></tbody>
+            <tfoot id="trial-bal-foot" class="bg-slate-100 font-extrabold border-t-2 text-slate-900"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div id="section-bal-sheet" class="hidden space-y-3 bg-white p-3 rounded-xl border shadow-sm">
+        <h4 class="text-xs font-extrabold text-slate-800 border-b pb-1">Statement of Financial Position (Balance Sheet)</h4>
+        <div class="space-y-2">
+          <p class="text-[11px] font-bold text-blue-800 uppercase border-b pb-1">1. Assets</p>
+          <div id="bs-assets" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+          <div class="flex justify-between font-extrabold text-xs text-blue-900 pt-1">
+            <span>TOTAL ASSETS:</span>
+            <span id="bs-tot-assets">₦0.00</span>
+          </div>
+        </div>
+        <div class="space-y-2 pt-2 border-t">
+          <p class="text-[11px] font-bold text-amber-800 uppercase border-b pb-1">2. Liabilities</p>
+          <div id="bs-liabilities" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+        </div>
+        <div class="space-y-2 pt-2 border-t">
+          <p class="text-[11px] font-bold text-purple-800 uppercase border-b pb-1">3. Capital & Reserves (Equity)</p>
+          <div id="bs-equity" class="text-xs space-y-1 divide-y divide-slate-100"></div>
+        </div>
+        <div class="bg-slate-900 text-white p-2.5 rounded-lg flex justify-between font-extrabold text-xs mt-2">
+          <span>TOTAL LIABILITIES & EQUITY:</span>
+          <span id="bs-tot-liab-equity">₦0.00</span>
+        </div>
+      </div>
+
+      <button onclick="window.print()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">PRINT FINANCIAL STATEMENTS</button>
     </div>
 
   </main>
 
-  <!-- MODALS -->
+   <script>
+    const API_BASE = 'https://coop-backend-api.onrender.com/api';
+    let authToken = localStorage.getItem('coop_token') || '';
+    let currentUser = JSON.parse(localStorage.getItem('coop_user') || '{}');
+    let statementData = null;
 
-  <!-- Onboard Member Modal -->
-  <div id="onboardModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 text-xs border shadow-2xl">
-      <h3 class="font-bold text-sm text-slate-800 border-b pb-2">Onboard New Member</h3>
-      <div><label class="block font-medium mb-1">Member No.</label><input type="text" id="on_member_no" placeholder="DTMPCS/042" class="w-full p-2 border rounded-lg"></div>
-      <div><label class="block font-medium mb-1">Full Name</label><input type="text" id="on_full_name" placeholder="John Doe" class="w-full p-2 border rounded-lg"></div>
-      <div><label class="block font-medium mb-1">Phone Number</label><input type="tel" id="on_phone" placeholder="08012345678" class="w-full p-2 border rounded-lg"></div>
-      <div>
-        <label class="block font-medium mb-1">System Role</label>
-        <select id="on_role" class="w-full p-2 border rounded-lg">
-          <option value="member">Member</option>
-          <option value="secretary">Secretary</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div><label class="block font-medium mb-1">Initial Shares (₦)</label><input type="number" id="on_shares" placeholder="0" class="w-full p-2 border rounded-lg"></div>
-        <div><label class="block font-medium mb-1">Initial Thrift (₦)</label><input type="number" id="on_thrift" placeholder="0" class="w-full p-2 border rounded-lg"></div>
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeModal('onboardModal')" class="px-3 py-1.5 rounded-lg border text-slate-600">Cancel</button>
-        <button onclick="handleOnboardMember()" class="px-3 py-1.5 rounded-lg bg-emerald-800 text-white font-bold">Save Member</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Grant Loan Modal -->
-  <div id="loanModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 text-xs border shadow-2xl">
-      <h3 class="font-bold text-sm text-slate-800 border-b pb-2">Grant Member Loan</h3>
-      <div><label class="block font-medium mb-1">Member No.</label><input type="text" id="l_member_no" placeholder="DTMPCS/042" class="w-full p-2 border rounded-lg"></div>
-      <div>
-        <label class="block font-medium mb-1">Loan Type</label>
-        <select id="l_type" class="w-full p-2 border rounded-lg">
-          <option value="NORMAL">Regular Loan</option>
-          <option value="EDU">Education Loan</option>
-        </select>
-      </div>
-      <div><label class="block font-medium mb-1">Principal Amount (₦)</label><input type="number" id="l_amount" placeholder="100000" class="w-full p-2 border rounded-lg"></div>
-      <div><label class="block font-medium mb-1">Disbursement Date</label><input type="date" id="l_date" class="w-full p-2 border rounded-lg"></div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeModal('loanModal')" class="px-3 py-1.5 rounded-lg border text-slate-600">Cancel</button>
-        <button onclick="handleGrantLoan()" class="px-3 py-1.5 rounded-lg bg-emerald-800 text-white font-bold">Disburse Loan</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Manual Journal Entry Modal -->
-  <div id="journalModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 text-xs border shadow-2xl">
-      <h3 class="font-bold text-sm text-slate-800 border-b pb-2">Post Manual Journal Entry</h3>
-      <div><label class="block font-medium mb-1">Entry Date</label><input type="date" id="j_date" class="w-full p-2 border rounded-lg"></div>
-      <div>
-        <label class="block font-medium mb-1">Account Category</label>
-        <select id="j_cat" class="w-full p-2 border rounded-lg">
-          <option value="ASSET">ASSET</option>
-          <option value="LIABILITY">LIABILITY</option>
-          <option value="EQUITY">EQUITY</option>
-          <option value="INCOME">INCOME</option>
-          <option value="EXPENDITURE">EXPENDITURE</option>
-        </select>
-      </div>
-      <div><label class="block font-medium mb-1">Particulars / Head</label><input type="text" id="j_head" placeholder="e.g. REGULAR LOAN INTEREST" class="w-full p-2 border rounded-lg"></div>
-      <div class="grid grid-cols-2 gap-2">
-        <div><label class="block font-medium mb-1">Debit Amount (₦)</label><input type="number" id="j_debit" placeholder="0" class="w-full p-2 border rounded-lg"></div>
-        <div><label class="block font-medium mb-1">Credit Amount (₦)</label><input type="number" id="j_credit" placeholder="0" class="w-full p-2 border rounded-lg"></div>
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeModal('journalModal')" class="px-3 py-1.5 rounded-lg border text-slate-600">Cancel</button>
-        <button onclick="handleJournalEntry()" class="px-3 py-1.5 rounded-lg bg-emerald-800 text-white font-bold">Post Entry</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Printable A4 Personal Ledger Modal -->
-  <div id="ledgerPrintModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto space-y-4 border shadow-2xl">
-      <div class="flex justify-between items-center no-print border-b pb-2">
-        <h3 class="font-bold text-sm text-slate-800">Print Member A4 Personal Ledger</h3>
-        <button onclick="closeModal('ledgerPrintModal')" class="text-xs text-slate-500 hover:underline">Close</button>
-      </div>
-      <div class="flex gap-2 no-print">
-        <input type="text" id="pl_member_no" placeholder="Member No (e.g. DTMPCS/042)" class="p-2 border rounded-lg text-xs flex-1">
-        <input type="number" id="pl_year" placeholder="Year (2026)" class="p-2 border rounded-lg text-xs w-24">
-        <button onclick="generateAndPrintLedger()" class="bg-emerald-800 text-white px-4 py-2 rounded-lg text-xs font-bold">Generate & Print</button>
-      </div>
-
-      <!-- Printable A4 Area -->
-      <div class="p-4 border text-[10px] space-y-2 bg-white text-black">
-        <div class="text-center font-bold">
-          <h2 class="text-xs uppercase">Dynamic Teachers' Multipurpose Cooperative Society Ltd.</h2>
-          <p>Personal Ledger Statement - Financial Year <span id="pr_year">2026</span></p>
-        </div>
-        <div class="flex justify-between border-b pb-1 font-semibold">
-          <span>Member Name: <b id="pr_member_name">-</b></span>
-          <span>Member No: <b id="pr_member_no">-</b></span>
-        </div>
-        <table class="w-full border-collapse border border-black text-center text-[9px]">
-          <thead>
-            <tr class="bg-gray-200 border-b border-black font-bold">
-              <th class="border border-black p-1">Date</th>
-              <th class="border border-black p-1">Particulars</th>
-              <th class="border border-black p-1">Total Paid</th>
-              <th class="border border-black p-1">SC Dr</th><th class="border border-black p-1">SC Cr</th><th class="border border-black p-1">SC Bal</th>
-              <th class="border border-black p-1">Mob Cr</th><th class="border border-black p-1">Mob Bal</th>
-              <th class="border border-black p-1">TS Dr</th><th class="border border-black p-1">TS Cr</th><th class="border border-black p-1">TS Bal</th>
-              <th class="border border-black p-1">Soc Dr</th><th class="border border-black p-1">Soc Cr</th><th class="border border-black p-1">Soc Bal</th>
-              <th class="border border-black p-1">NL Dr</th><th class="border border-black p-1">NL Cr</th><th class="border border-black p-1">NL Bal</th>
-              <th class="border border-black p-1">EL Dr</th><th class="border border-black p-1">EL Cr</th><th class="border border-black p-1">EL Bal</th>
-              <th class="border border-black p-1">Int Paid</th>
-            </tr>
-          </thead>
-          <tbody id="pr_ledger_rows"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <!-- APPLICATION SCRIPT LOGIC -->
-<script>
-  // Dynamic API Base URL detection
-  const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:10000/api'
-    : 'https://coop-backend-api.onrender.com/api';
-
-  let authToken = localStorage.getItem('coop_token') || '';
-  let currentUser = JSON.parse(localStorage.getItem('coop_user') || '{}');
-  let statementData = null;
-
-  window.onload = () => {
-    if (authToken && currentUser && currentUser.phone) {
-      setupUserSession(currentUser);
-    } else {
-      showScreen('login-view');
-    }
-  };
-
-  // Central API fetcher with token & error handling
-  async function apiFetch(endpoint, options = {}) {
-    options.headers = options.headers || {};
-    if (authToken) {
-      options.headers['Authorization'] = `Bearer ${authToken}`;
-    }
-    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
-      options.headers['Content-Type'] = 'application/json';
-      options.body = JSON.stringify(options.body);
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}${endpoint}`, options);
-      const data = await res.json();
-      
-      if (res.status === 401 || res.status === 403) {
-        if (res.status === 403 && data.error && data.error.includes('Insufficient privileges')) {
-          alert('Access Denied: You do not have permission to perform this action.');
-        } else {
-          alert(data.error || 'Session expired. Please log in again.');
-          logout();
-        }
-        return null;
-      }
-      
-      if (!res.ok) {
-        throw new Error(data.error || `Server error (${res.status})`);
-      }
-      return data;
-    } catch (err) {
-      alert(err.message || 'Network connection failure.');
-      return null;
-    }
-  }
-
-  function togglePasswordVisibility(inputId, iconId) {
-    const input = document.getElementById(inputId);
-    const icon = document.getElementById(iconId);
-    if (!input) return;
-    if (input.type === 'password') {
-      input.type = 'text';
-      if (icon) icon.classList.replace('fa-eye', 'fa-eye-slash');
-    } else {
-      input.type = 'password';
-      if (icon) icon.classList.replace('fa-eye-slash', 'fa-eye');
-    }
-  }
-
-  function showScreen(screenId) {
-    ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view', 'financial-statements-view', 'post-remittance-view'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.add('hidden');
-    });
-    
-    const target = document.getElementById(screenId);
-    if (target) target.classList.remove('hidden');
-
-    if (screenId === 'schedule-view') fetchMonthlySchedule();
-    if (screenId === 'executive-summary-view') fetchExecutiveSummary();
-    if (screenId === 'ledger-search-view') searchMemberLedger();
-    if (screenId === 'financial-statements-view') fetchFinancialStatements();
-    if (screenId === 'post-remittance-view') {
-      const dateEl = document.getElementById('post-payment-date');
-      if (dateEl) dateEl.valueAsDate = new Date();
-    }
-  }
-
-  function calcTotal() {
-    const t = Math.max(0, Number(document.getElementById('post-thrift')?.value || 0));
-    const s = Math.max(0, Number(document.getElementById('post-shares')?.value || 0));
-    const d = Math.max(0, Number(document.getElementById('post-dues')?.value || 0));
-    const l = Math.max(0, Number(document.getElementById('post-loan')?.value || 0));
-    const e = Math.max(0, Number(document.getElementById('post-eduloan')?.value || 0));
-    const sp = Math.max(0, Number(document.getElementById('post-special')?.value || 0));
-    const mob = Math.max(0, Number(document.getElementById('post-capmob')?.value || 0));
-
-    const tot = t + s + d + l + e + sp + mob;
-    const totalEl = document.getElementById('post-total-val');
-    if (totalEl) totalEl.innerText = `₦${tot.toLocaleString()}`;
-  }
-
-  async function handleLogin(e) {
-    e.preventDefault();
-    const phone = (document.getElementById('login-phone') || document.getElementById('phone'))?.value.trim();
-    const password = (document.getElementById('login-password') || document.getElementById('password'))?.value.trim();
-
-    if (!phone || !password) return alert('Phone number and password are required.');
-
-    const data = await apiFetch('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ phone, password })
-    });
-
-    if (data && data.token) {
-      authToken = data.token;
-      currentUser = data.member;
-      localStorage.setItem('coop_token', authToken);
-      localStorage.setItem('coop_user', JSON.stringify(currentUser));
-      setupUserSession(currentUser);
-    }
-  }
-
-  async function handleActivation(e) {
-    e.preventDefault();
-    const phone = (document.getElementById('act-phone') || document.getElementById('act_phone'))?.value.trim();
-    const password = (document.getElementById('act-password') || document.getElementById('act_password'))?.value.trim();
-    const confirm = (document.getElementById('act-confirm') || document.getElementById('act_confirm'))?.value.trim();
-
-    if (password && confirm && password !== confirm) return alert('Passwords do not match.');
-
-    const data = await apiFetch('/auth/activate', {
-      method: 'POST',
-      body: JSON.stringify({ phone, password })
-    });
-
-    if (data) {
-      alert(data.message || 'Account activated successfully!');
-      showScreen('login-view');
-    }
-  }
-
-  async function handleResetPassword(e) {
-    e.preventDefault();
-    const phone = (document.getElementById('reset-phone') || document.getElementById('reset_phone'))?.value.trim();
-    const newPassword = (document.getElementById('reset-password') || document.getElementById('reset_password') || document.getElementById('reset-new-password'))?.value.trim();
-
-    if (!phone || !newPassword) return alert('Phone and new password are required.');
-
-    const data = await apiFetch('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ phone, newPassword })
-    });
-
-    if (data) {
-      alert(data.message || 'Password reset successful!');
-      showScreen('login-view');
-    }
-  }
-
-  function setupUserSession(user) {
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.classList.remove('hidden');
-    
-    const isAdminOrSecretary = user.is_admin || ['ADMIN', 'SECRETARY'].includes((user.role || '').toUpperCase());
-    const adminTools = document.getElementById('admin-tools');
-    if (adminTools) {
-      if (isAdminOrSecretary) {
-        adminTools.classList.remove('hidden');
+    window.onload = () => {
+      if (authToken && currentUser) {
+        setupUserSession(currentUser);
       } else {
-        adminTools.classList.add('hidden');
+        showScreen('login-view');
       }
-    }
-    
-    showScreen('dashboard-view');
-    fetchDashboardBalances();
-  }
-
-  async function fetchDashboardBalances() {
-    const data = await apiFetch('/member/dashboard');
-    if (data) {
-      const nameEl = document.getElementById('user-name');
-      const accEl = document.getElementById('user-acc');
-      if (nameEl) nameEl.innerText = data.full_name || 'Member';
-      if (accEl) accEl.innerText = data.member_no || '-';
-
-      const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.innerText = `₦${Number(val || 0).toLocaleString()}`;
-      };
-
-      setVal('bal-thrift', data.thrift_savings);
-      setVal('bal-shares', data.share_capital);
-      setVal('bal-capmob', data.cap_mob);
-      setVal('bal-special', data.special_deposit);
-      setVal('bal-loan', data.loan_balance);
-      setVal('bal-eduloan', data.edu_loan_balance);
-    }
-  }
-
-  async function handlePostRemittance(e) {
-    e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    if (btn) {
-      btn.disabled = true;
-      btn.innerText = 'POSTING PAYMENT...';
-    }
-
-    const payload = {
-      member_no: document.getElementById('post-member-no')?.value.trim(),
-      payment_date: document.getElementById('post-payment-date')?.value,
-      month_year: document.getElementById('post-month-year')?.value,
-      thrift_savings: Math.max(0, Number(document.getElementById('post-thrift')?.value || 0)),
-      share_capital: Math.max(0, Number(document.getElementById('post-shares')?.value || 0)),
-      social_dues: Math.max(0, Number(document.getElementById('post-dues')?.value || 0)),
-      loan_repayment: Math.max(0, Number(document.getElementById('post-loan')?.value || 0)),
-      edu_loan_repayment: Math.max(0, Number(document.getElementById('post-eduloan')?.value || 0)),
-      special_deposit: Math.max(0, Number(document.getElementById('post-special')?.value || 0)),
-      cap_mob: Math.max(0, Number(document.getElementById('post-capmob')?.value || 0))
     };
 
-    const data = await apiFetch('/admin/post-monthly-deduction', {
-      method: 'POST',
-      body: payload
-    });
-
-    if (btn) {
-      btn.disabled = false;
-      btn.innerText = 'SUBMIT MONTHLY REMITTANCE';
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
     }
 
-    if (data) {
-      alert(data.message || 'Remittance posted and balances updated successfully!');
-      if (document.getElementById('post-member-no')) document.getElementById('post-member-no').value = '';
-      ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob'].forEach(id => {
-        const input = document.getElementById(id);
-        if (input) input.value = '';
+    function showScreen(screenId) {
+      ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view', 'financial-statements-view', 'post-remittance-view'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
       });
-      calcTotal();
-      fetchDashboardBalances();
-      showScreen('dashboard-view');
+      document.getElementById(screenId).classList.remove('hidden');
+
+      if (screenId === 'schedule-view') fetchMonthlySchedule();
+      if (screenId === 'executive-summary-view') fetchExecutiveSummary();
+      if (screenId === 'ledger-search-view') searchMemberLedger();
+      if (screenId === 'financial-statements-view') fetchFinancialStatements();
+      if (screenId === 'post-remittance-view') {
+        document.getElementById('post-payment-date').valueAsDate = new Date();
+      }
     }
-  }
 
-  async function fetchMonthlySchedule() {
-    const tbody = document.getElementById('schedule-table-body');
-    const tfoot = document.getElementById('schedule-table-foot');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Loading schedule...</td></tr>`;
+    function calcTotal() {
+      const t = Number(document.getElementById('post-thrift').value || 0);
+      const s = Number(document.getElementById('post-shares').value || 0);
+      const d = Number(document.getElementById('post-dues').value || 0);
+      const l = Number(document.getElementById('post-loan').value || 0);
+      const e = Number(document.getElementById('post-eduloan').value || 0);
+      const sp = Number(document.getElementById('post-special').value || 0);
+      const mob = Number(document.getElementById('post-capmob').value || 0);
 
-    const records = await apiFetch('/member/monthly-schedule');
+      const tot = t + s + d + l + e + sp + mob;
+      document.getElementById('post-total-val').innerText = `₦${tot.toLocaleString()}`;
+    }
 
-    if (records && records.length > 0) {
-      let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
+    async function handlePostRemittance(e) {
+      e.preventDefault();
+      const payload = {
+        member_no: document.getElementById('post-member-no').value.trim(),
+        payment_date: document.getElementById('post-payment-date').value,
+        month_year: document.getElementById('post-month-year').value,
+        thrift_savings: Number(document.getElementById('post-thrift').value || 0),
+        share_capital: Number(document.getElementById('post-shares').value || 0),
+        social_dues: Number(document.getElementById('post-dues').value || 0),
+        loan_repayment: Number(document.getElementById('post-loan').value || 0),
+        edu_loan_repayment: Number(document.getElementById('post-eduloan').value || 0),
+        special_deposit: Number(document.getElementById('post-special').value || 0),
+        cap_mob: Number(document.getElementById('post-capmob').value || 0)
+      };
 
-      if (tbody) {
-        tbody.innerHTML = records.map(r => {
-          totals.total += Number(r.total_amount || 0);
-          totals.thrift += Number(r.thrift_savings || 0);
-          totals.shares += Number(r.share_capital || 0);
-          totals.dues += Number(r.social_dues || 0);
-          totals.loan += Number(r.loan_repayment || 0);
-          totals.edu += Number(r.edu_loan_repayment || 0);
-          totals.special += Number(r.special_deposit || 0);
+      try {
+        const res = await fetch(`${API_BASE}/admin/post-monthly-deduction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(payload)
+        });
 
-          return `
-            <tr class="hover:bg-slate-50">
-              <td class="p-2.5 font-bold text-slate-700">${r.month_year || '-'}</td>
-              <td class="p-2.5 text-right font-bold text-emerald-700">₦${Number(r.total_amount || 0).toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${Number(r.thrift_savings || 0).toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${Number(r.share_capital || 0).toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${Number(r.social_dues || 0).toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${Number(r.loan_repayment || 0).toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${Number(r.edu_loan_repayment || 0).toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${Number(r.special_deposit || 0).toLocaleString()}</td>
+        const data = await res.json();
+        if (res.ok) {
+          alert('Remittance posted and balances updated!');
+          document.getElementById('post-member-no').value = '';
+          ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob'].forEach(id => document.getElementById(id).value = '');
+          calcTotal();
+          showScreen('dashboard-view');
+        } else {
+          alert(data.error || 'Failed to post remittance.');
+        }
+      } catch (err) {
+        alert('Server connection error.');
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const phone = document.getElementById('login-phone').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          authToken = data.token;
+          currentUser = data.member;
+          localStorage.setItem('coop_token', authToken);
+          localStorage.setItem('coop_user', JSON.stringify(currentUser));
+          setupUserSession(currentUser);
+        } else {
+          alert(data.error || 'Login failed.');
+        }
+      } catch (err) {
+        alert('Unable to connect to server.');
+      }
+    }
+
+    async function handleActivation(e) {
+      e.preventDefault();
+      const phone = document.getElementById('act-phone').value.trim();
+      const password = document.getElementById('act-password').value.trim();
+      const confirm = document.getElementById('act-confirm').value.trim();
+
+      if (password !== confirm) return alert('Passwords do not match.');
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/activate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('Account activated! You can now log in.');
+          showScreen('login-view');
+        } else {
+          alert(data.error || 'Activation failed.');
+        }
+      } catch (err) {
+        alert('Server connection error.');
+      }
+    }
+
+    async function handleResetPassword(e) {
+      e.preventDefault();
+      const phone = document.getElementById('reset-phone').value.trim();
+      const newPassword = document.getElementById('reset-password').value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, newPassword })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          showScreen('login-view');
+        } else {
+          alert(data.error || 'Password reset failed.');
+        }
+      } catch (err) {
+        alert('Server connection error.');
+      }
+    }
+
+    function setupUserSession(user) {
+      document.getElementById('logout-btn').classList.remove('hidden');
+      if (user.is_admin || user.role === 'ADMIN' || user.role === 'SECRETARY') {
+        document.getElementById('admin-tools').classList.remove('hidden');
+      }
+      showScreen('dashboard-view');
+      fetchDashboardBalances();
+    }
+
+    async function fetchDashboardBalances() {
+      try {
+        const res = await fetch(`${API_BASE}/member/dashboard`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById('user-name').innerText = data.full_name || 'Member';
+          document.getElementById('user-acc').innerText = data.member_no || '-';
+          document.getElementById('user-updated').innerText = data.updated_at ? new Date(data.updated_at).toLocaleDateString('en-GB') : 'Initial 2025';
+
+          document.getElementById('bal-thrift').innerText = `₦${Number(data.thrift_savings || 0).toLocaleString()}`;
+          document.getElementById('bal-shares').innerText = `₦${Number(data.share_capital || 0).toLocaleString()}`;
+          document.getElementById('bal-capmob').innerText = `₦${Number(data.cap_mob || 0).toLocaleString()}`;
+          document.getElementById('bal-special').innerText = `₦${Number(data.special_deposit || 0).toLocaleString()}`;
+          document.getElementById('bal-loan').innerText = `₦${Number(data.loan_balance || 0).toLocaleString()}`;
+          document.getElementById('bal-eduloan').innerText = `₦${Number(data.edu_loan_balance || 0).toLocaleString()}`;
+        }
+      } catch (err) {
+        console.error('Error loading dashboard balances.');
+      }
+    }
+
+    async function fetchMonthlySchedule() {
+      const tbody = document.getElementById('schedule-table-body');
+      const tfoot = document.getElementById('schedule-table-foot');
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Loading schedule...</td></tr>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/member/monthly-schedule`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const records = await res.json();
+
+        if (res.ok && records.length > 0) {
+          let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
+
+          tbody.innerHTML = records.map(r => {
+            totals.total += Number(r.total_amount || 0);
+            totals.thrift += Number(r.thrift_savings || 0);
+            totals.shares += Number(r.share_capital || 0);
+            totals.dues += Number(r.social_dues || 0);
+            totals.loan += Number(r.loan_repayment || 0);
+            totals.edu += Number(r.edu_loan_repayment || 0);
+            totals.special += Number(r.special_deposit || 0);
+
+            return `
+              <tr class="hover:bg-slate-50">
+                <td class="p-2.5 font-bold text-slate-700">${r.month_year}</td>
+                <td class="p-2.5 text-right font-bold text-emerald-700">₦${Number(r.total_amount || 0).toLocaleString()}</td>
+                <td class="p-2.5 text-right">₦${Number(r.thrift_savings || 0).toLocaleString()}</td>
+                <td class="p-2.5 text-right">₦${Number(r.share_capital || 0).toLocaleString()}</td>
+                <td class="p-2.5 text-right">₦${Number(r.social_dues || 0).toLocaleString()}</td>
+                <td class="p-2.5 text-right">₦${Number(r.loan_repayment || 0).toLocaleString()}</td>
+                <td class="p-2.5 text-right">₦${Number(r.edu_loan_repayment || 0).toLocaleString()}</td>
+                <td class="p-2.5 text-right">₦${Number(r.special_deposit || 0).toLocaleString()}</td>
+              </tr>
+            `;
+          }).join('');
+
+          tfoot.innerHTML = `
+            <tr>
+              <td class="p-2.5">YTD TOTAL</td>
+              <td class="p-2.5 text-right text-emerald-800">₦${totals.total.toLocaleString()}</td>
+              <td class="p-2.5 text-right">₦${totals.thrift.toLocaleString()}</td>
+              <td class="p-2.5 text-right">₦${totals.shares.toLocaleString()}</td>
+              <td class="p-2.5 text-right">₦${totals.dues.toLocaleString()}</td>
+              <td class="p-2.5 text-right">₦${totals.loan.toLocaleString()}</td>
+              <td class="p-2.5 text-right">₦${totals.edu.toLocaleString()}</td>
+              <td class="p-2.5 text-right">₦${totals.special.toLocaleString()}</td>
             </tr>
           `;
-        }).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No monthly postings recorded yet.</td></tr>`;
+          tfoot.innerHTML = '';
+        }
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-500">Error loading schedule.</td></tr>`;
       }
-
-      if (tfoot) {
-        tfoot.innerHTML = `
-          <tr class="font-bold bg-slate-100 border-t-2 border-slate-300">
-            <td class="p-2.5">YTD TOTAL</td>
-            <td class="p-2.5 text-right text-emerald-800">₦${totals.total.toLocaleString()}</td>
-            <td class="p-2.5 text-right">₦${totals.thrift.toLocaleString()}</td>
-            <td class="p-2.5 text-right">₦${totals.shares.toLocaleString()}</td>
-            <td class="p-2.5 text-right">₦${totals.dues.toLocaleString()}</td>
-            <td class="p-2.5 text-right">₦${totals.loan.toLocaleString()}</td>
-            <td class="p-2.5 text-right">₦${totals.edu.toLocaleString()}</td>
-            <td class="p-2.5 text-right">₦${totals.special.toLocaleString()}</td>
-          </tr>
-        `;
-      }
-    } else {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No monthly postings recorded yet.</td></tr>`;
-      if (tfoot) tfoot.innerHTML = '';
     }
-  }
 
-  async function fetchExecutiveSummary() {
-    const month = document.getElementById('summary-month-filter')?.value || '';
-    const container = document.getElementById('executive-summary-grid');
-    if (container) container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Generating summary...</p>`;
+    async function fetchExecutiveSummary() {
+      const month = document.getElementById('summary-month-filter').value;
+      const container = document.getElementById('executive-summary-grid');
+      container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Generating summary...</p>`;
 
-    const s = await apiFetch(`/admin/executive-summary?month_year=${encodeURIComponent(month)}`);
+      try {
+        const res = await fetch(`${API_BASE}/admin/executive-summary?month_year=${month}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const s = await res.json();
 
-    if (s && container) {
-      container.innerHTML = `
-        <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-          <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider border-b pb-1">1. Capital, Savings & Remittances</p>
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>Total Paid In: <b class="block text-emerald-700 font-extrabold text-sm">₦${Number(s['1_total_paid_in'] || 0).toLocaleString()}</b></div>
-            <div>Share Capital: <b class="block text-slate-800">₦${Number(s['2_share_capital'] || 0).toLocaleString()}</b></div>
-            <div>Thrift Savings: <b class="block text-slate-800">₦${Number(s['3_thrift_savings'] || 0).toLocaleString()}</b></div>
-            <div>Special Deposits: <b class="block text-slate-800">₦${Number(s['15_special_deposits'] || 0).toLocaleString()}</b></div>
-            <div>Social Dues: <b class="block text-slate-800">₦${Number(s['4_social_dues'] || 0).toLocaleString()}</b></div>
-            <div>Registration Fees: <b class="block text-slate-800">₦${Number(s['16_registration_fees'] || 0).toLocaleString()}</b></div>
-          </div>
-        </div>
-
-        <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-          <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider border-b pb-1">2. Regular Loan Portfolio</p>
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>Loan Disbursed: <b class="block text-slate-800">₦${Number(s['5_loan_given_out'] || 0).toLocaleString()}</b></div>
-            <div>Loan Refund: <b class="block text-emerald-700">₦${Number(s['7_loan_refund'] || 0).toLocaleString()}</b></div>
-            <div>Loan Balance: <b class="block text-amber-700 font-bold">₦${Number(s['8_loan_balance'] || 0).toLocaleString()}</b></div>
-            <div>Loan Interest: <b class="block text-slate-800">₦${Number(s['6_loan_interest'] || 0).toLocaleString()}</b></div>
-            <div class="col-span-2">Penal Interest (Regular): <b class="block text-rose-600">₦${Number(s['13_loan_penal_interest'] || 0).toLocaleString()}</b></div>
-          </div>
-        </div>
-
-        <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-          <p class="text-[11px] font-bold text-rose-800 uppercase tracking-wider border-b pb-1">3. Education Loan Portfolio</p>
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>Edu Disbursed: <b class="block text-slate-800">₦${Number(s['9_edu_loan_given_out'] || 0).toLocaleString()}</b></div>
-            <div>Edu Refund: <b class="block text-emerald-700">₦${Number(s['11_edu_loan_refund'] || 0).toLocaleString()}</b></div>
-            <div>Edu Balance: <b class="block text-rose-700 font-bold">₦${Number(s['12_edu_loan_balance'] || 0).toLocaleString()}</b></div>
-            <div>Edu Interest: <b class="block text-slate-800">₦${Number(s['10_edu_loan_interest'] || 0).toLocaleString()}</b></div>
-            <div class="col-span-2">Penal Interest (Edu): <b class="block text-rose-600">₦${Number(s['14_edu_loan_penal_interest'] || 0).toLocaleString()}</b></div>
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  async function searchMemberLedger() {
-    const rawQuery = (document.getElementById('member-search-input')?.value || '').trim();
-    const sanitized = rawQuery.replace(/[^a-zA-Z0-9\s]/g, '');
-    const container = document.getElementById('ledger-results');
-
-    const members = await apiFetch(`/admin/members/search?q=${encodeURIComponent(sanitized)}`);
-
-    if (container) {
-      if (members && members.length > 0) {
-        container.innerHTML = members.map(m => `
-          <div class="p-3 bg-white border rounded-xl text-xs space-y-1 shadow-sm">
-            <div class="flex justify-between font-bold">
-              <span class="text-slate-800">${m.full_name || 'Unnamed Member'}</span>
-              <span class="text-emerald-700">${m.member_no || '-'}</span>
+        if (res.ok) {
+          container.innerHTML = `
+            <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
+              <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider border-b pb-1">1. Capital, Savings & Remittances</p>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>Total Paid In: <b class="block text-emerald-700 font-extrabold text-sm">₦${Number(s['1_total_paid_in']).toLocaleString()}</b></div>
+                <div>Share Capital: <b class="block text-slate-800">₦${Number(s['2_share_capital']).toLocaleString()}</b></div>
+                <div>Thrift Savings: <b class="block text-slate-800">₦${Number(s['3_thrift_savings']).toLocaleString()}</b></div>
+                <div>Special Deposits: <b class="block text-slate-800">₦${Number(s['15_special_deposits']).toLocaleString()}</b></div>
+                <div>Social Dues: <b class="block text-slate-800">₦${Number(s['4_social_dues']).toLocaleString()}</b></div>
+                <div>Registration Fees: <b class="block text-slate-800">₦${Number(s['16_registration_fees']).toLocaleString()}</b></div>
+              </div>
             </div>
-            <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-600 pt-1.5 border-t">
-              <div>Thrift: <b>₦${Number(m.thrift_savings || 0).toLocaleString()}</b></div>
-              <div>Shares: <b>₦${Number(m.share_capital || 0).toLocaleString()}</b></div>
-              <div>Cap Mob: <b>₦${Number(m.cap_mob || 0).toLocaleString()}</b></div>
-              <div>Special Dep: <b>₦${Number(m.special_deposit || 0).toLocaleString()}</b></div>
-              <div>Normal Loan: <b>₦${Number(m.loan_balance || 0).toLocaleString()}</b></div>
-              <div>Edu Loan: <b>₦${Number(m.edu_loan_balance || 0).toLocaleString()}</b></div>
+
+            <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
+              <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider border-b pb-1">2. Regular Loan Portfolio</p>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>Loan Disbursed: <b class="block text-slate-800">₦${Number(s['5_loan_given_out']).toLocaleString()}</b></div>
+                <div>Loan Refund: <b class="block text-emerald-700">₦${Number(s['7_loan_refund']).toLocaleString()}</b></div>
+                <div>Loan Balance: <b class="block text-amber-700 font-bold">₦${Number(s['8_loan_balance']).toLocaleString()}</b></div>
+                <div>Loan Interest: <b class="block text-slate-800">₦${Number(s['6_loan_interest']).toLocaleString()}</b></div>
+                <div class="col-span-2">Penal Interest (Regular): <b class="block text-rose-600">₦${Number(s['13_loan_penal_interest']).toLocaleString()}</b></div>
+              </div>
             </div>
-          </div>
-        `).join('');
-      } else {
-        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No matching members found.</p>`;
+
+            <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
+              <p class="text-[11px] font-bold text-rose-800 uppercase tracking-wider border-b pb-1">3. Education Loan Portfolio</p>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>Edu Disbursed: <b class="block text-slate-800">₦${Number(s['9_edu_loan_given_out']).toLocaleString()}</b></div>
+                <div>Edu Refund: <b class="block text-emerald-700">₦${Number(s['11_edu_loan_refund']).toLocaleString()}</b></div>
+                <div>Edu Balance: <b class="block text-rose-700 font-bold">₦${Number(s['12_edu_loan_balance']).toLocaleString()}</b></div>
+                <div>Edu Interest: <b class="block text-slate-800">₦${Number(s['10_edu_loan_interest']).toLocaleString()}</b></div>
+                <div class="col-span-2">Penal Interest (Edu): <b class="block text-rose-600">₦${Number(s['14_edu_loan_penal_interest']).toLocaleString()}</b></div>
+              </div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        container.innerHTML = `<p class="text-xs text-red-500 text-center py-4">Error loading summary.</p>`;
       }
     }
-  }
 
-  function switchStatementTab(tabKey) {
-    ['inc-exp', 'trial-bal', 'bal-sheet'].forEach(k => {
-      const sec = document.getElementById(`section-${k}`);
-      const tb = document.getElementById(`tab-${k}`);
-      if (sec) sec.classList.add('hidden');
-      if (tb) tb.className = 'flex-1 py-2 rounded-lg text-slate-700 hover:bg-white';
-    });
+    async function searchMemberLedger() {
+      const query = (document.getElementById('member-search-input').value || '').trim();
+      const container = document.getElementById('ledger-results');
 
-    const activeSec = document.getElementById(`section-${tabKey}`);
-    const activeTb = document.getElementById(`tab-${tabKey}`);
-    if (activeSec) activeSec.classList.remove('hidden');
-    if (activeTb) activeTb.className = 'flex-1 py-2 rounded-lg bg-emerald-800 text-white shadow';
-  }
+      try {
+        const res = await fetch(`${API_BASE}/admin/members/search?q=${query}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const members = await res.json();
 
-  async function fetchFinancialStatements() {
-    if (statementData) return renderFinancialStatements(statementData);
-
-    const data = await apiFetch('/admin/financial-statements');
-    if (data) {
-      statementData = data;
-      renderFinancialStatements(data);
+        if (res.ok && members.length > 0) {
+          container.innerHTML = members.map(m => `
+            <div class="p-3 bg-white border rounded-xl text-xs space-y-1 shadow-sm">
+              <div class="flex justify-between font-bold">
+                <span class="text-slate-800">${m.full_name || m.name || 'Unnamed Member'}</span>
+                <span class="text-emerald-700">${m.member_no || m.acc_no || '-'}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-600 pt-1.5 border-t">
+                <div>Thrift: <b>₦${Number(m.thrift_savings || 0).toLocaleString()}</b></div>
+                <div>Shares: <b>₦${Number(m.share_capital || 0).toLocaleString()}</b></div>
+                <div>Cap Mob: <b>₦${Number(m.cap_mob || 0).toLocaleString()}</b></div>
+                <div>Special Dep: <b>₦${Number(m.special_deposit || 0).toLocaleString()}</b></div>
+                <div>Normal Loan: <b>₦${Number(m.loan_balance || 0).toLocaleString()}</b></div>
+                <div>Edu Loan: <b>₦${Number(m.edu_loan_balance || 0).toLocaleString()}</b></div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No matching members found.</p>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<p class="text-xs text-red-500 text-center py-4">Search error.</p>`;
+      }
     }
-  }
 
-  function renderFinancialStatements(data) {
-    const ie = data.income_expenditure;
-    const incEl = document.getElementById('report-incomes');
-    if (incEl) {
-      incEl.innerHTML = (ie.incomes || []).map(i => `
-        <div class="flex justify-between py-1"><span>${i.head}</span><b>₦${Number(i.amount || 0).toLocaleString()}</b></div>
+    function switchStatementTab(tabKey) {
+      ['inc-exp', 'trial-bal', 'bal-sheet'].forEach(k => {
+        document.getElementById(`section-${k}`).classList.add('hidden');
+        document.getElementById(`tab-${k}`).className = 'flex-1 py-2 rounded-lg text-slate-700 hover:bg-white';
+      });
+
+      document.getElementById(`section-${tabKey}`).classList.remove('hidden');
+      document.getElementById(`tab-${tabKey}`).className = 'flex-1 py-2 rounded-lg bg-emerald-800 text-white shadow';
+    }
+
+    async function fetchFinancialStatements() {
+      if (statementData) return renderFinancialStatements(statementData);
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/financial-statements`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          statementData = data;
+          renderFinancialStatements(data);
+        }
+      } catch (err) {
+        alert('Error loading financial statements.');
+      }
+    }
+
+    function renderFinancialStatements(data) {
+      const ie = data.income_expenditure;
+      document.getElementById('report-incomes').innerHTML = (ie.incomes || []).map(i => `
+        <div class="flex justify-between py-1"><span>${i.head}</span><b>₦${Number(i.amount).toLocaleString()}</b></div>
       `).join('');
-    }
-    const totIncEl = document.getElementById('tot-income');
-    if (totIncEl) totIncEl.innerText = `₦${Number(ie.total_income || 0).toLocaleString()}`;
+      document.getElementById('tot-income').innerText = `₦${Number(ie.total_income).toLocaleString()}`;
 
-    const expEl = document.getElementById('report-expenditures');
-    if (expEl) {
-      expEl.innerHTML = (ie.expenditures || []).map(e => `
-        <div class="flex justify-between py-1"><span>${e.head}</span><b>₦${Number(e.amount || 0).toLocaleString()}</b></div>
+      document.getElementById('report-expenditures').innerHTML = (ie.expenditures || []).map(e => `
+        <div class="flex justify-between py-1"><span>${e.head}</span><b>₦${Number(e.amount).toLocaleString()}</b></div>
       `).join('');
-    }
-    const totExpEl = document.getElementById('tot-expenditure');
-    if (totExpEl) totExpEl.innerText = `₦${Number(ie.total_expenditure || 0).toLocaleString()}`;
-    const netSurpEl = document.getElementById('net-surplus-val');
-    if (netSurpEl) netSurpEl.innerText = `₦${Number(ie.net_surplus || 0).toLocaleString()}`;
+      document.getElementById('tot-expenditure').innerText = `₦${Number(ie.total_expenditure).toLocaleString()}`;
+      document.getElementById('net-surplus-val').innerText = `₦${Number(ie.net_surplus).toLocaleString()}`;
 
-    let totDr = 0, totCr = 0;
-    const tbBody = document.getElementById('trial-bal-body');
-    if (tbBody) {
-      tbBody.innerHTML = (data.trial_balance || []).map(tb => {
-        totDr += Number(tb.debit || 0);
-        totCr += Number(tb.credit || 0);
+      let totDr = 0, totCr = 0;
+      document.getElementById('trial-bal-body').innerHTML = (data.trial_balance || []).map(tb => {
+        totDr += Number(tb.debit);
+        totCr += Number(tb.credit);
         return `
           <tr class="hover:bg-slate-50">
             <td class="p-2 font-medium">${tb.head}</td>
-            <td class="p-2 text-right">₦${Number(tb.debit || 0).toLocaleString()}</td>
-            <td class="p-2 text-right">₦${Number(tb.credit || 0).toLocaleString()}</td>
+            <td class="p-2 text-right">₦${Number(tb.debit).toLocaleString()}</td>
+            <td class="p-2 text-right">₦${Number(tb.credit).toLocaleString()}</td>
           </tr>
         `;
       }).join('');
-    }
-    const tbFoot = document.getElementById('trial-bal-foot');
-    if (tbFoot) {
-      tbFoot.innerHTML = `
-        <tr class="font-bold bg-slate-100">
+      document.getElementById('trial-bal-foot').innerHTML = `
+        <tr>
           <td class="p-2">TOTAL</td>
           <td class="p-2 text-right text-emerald-800">₦${totDr.toLocaleString()}</td>
           <td class="p-2 text-right text-emerald-800">₦${totCr.toLocaleString()}</td>
         </tr>
-      `;
-    }
+   `;
 
-    const bs = data.balance_sheet;
-    const bsAssets = document.getElementById('bs-assets');
-    if (bsAssets) {
-      bsAssets.innerHTML = (bs.assets || []).map(a => `
-        <div class="flex justify-between py-1"><span>${a.head}</span><b>₦${Number(a.amount || 0).toLocaleString()}</b></div>
+      const bs = data.balance_sheet;
+      document.getElementById('bs-assets').innerHTML = (bs.assets || []).map(a => `
+        <div class="flex justify-between py-1"><span>${a.head}</span><b>₦${Number(a.amount).toLocaleString()}</b></div>
       `).join('');
-    }
-    const bsTotAssets = document.getElementById('bs-tot-assets');
-    if (bsTotAssets) bsTotAssets.innerText = `₦${Number(bs.total_assets || 0).toLocaleString()}`;
+      document.getElementById('bs-tot-assets').innerText = `₦${Number(bs.total_assets).toLocaleString()}`;
 
-    const bsLiab = document.getElementById('bs-liabilities');
-    if (bsLiab) {
-      bsLiab.innerHTML = (bs.liabilities || []).map(l => `
-        <div class="flex justify-between py-1"><span>${l.head}</span><b>₦${Number(l.amount || 0).toLocaleString()}</b></div>
+      document.getElementById('bs-liabilities').innerHTML = (bs.liabilities || []).map(l => `
+        <div class="flex justify-between py-1"><span>${l.head}</span><b>₦${Number(l.amount).toLocaleString()}</b></div>
       `).join('');
-    }
 
-    const bsEq = document.getElementById('bs-equity');
-    if (bsEq) {
-      bsEq.innerHTML = (bs.equity || []).map(e => `
-        <div class="flex justify-between py-1"><span>${e.head}</span><b>₦${Number(e.amount || 0).toLocaleString()}</b></div>
+      document.getElementById('bs-equity').innerHTML = (bs.equity || []).map(e => `
+        <div class="flex justify-between py-1"><span>${e.head}</span><b>₦${Number(e.amount).toLocaleString()}</b></div>
       `).join('');
-    }
-    const bsTotLiabEq = document.getElementById('bs-tot-liab-equity');
-    if (bsTotLiabEq) bsTotLiabEq.innerText = `₦${Number(bs.total_liabilities_and_equity || 0).toLocaleString()}`;
-  }
-
-  function openModal(id) { 
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('hidden'); 
-  }
-  function closeModal(id) { 
-    const el = document.getElementById(id);
-    if (el) el.classList.add('hidden'); 
-  }
-
-  async function handleOnboardMember() {
-    const payload = {
-      member_no: document.getElementById('on_member_no')?.value.trim(),
-      full_name: document.getElementById('on_full_name')?.value.trim(),
-      phone: document.getElementById('on_phone')?.value.trim(),
-      role: document.getElementById('on_role')?.value,
-      share_capital: Math.max(0, Number(document.getElementById('on_shares')?.value || 0)),
-      thrift_savings: Math.max(0, Number(document.getElementById('on_thrift')?.value || 0))
-    };
-
-    if (!payload.member_no || !payload.full_name || !payload.phone) {
-      return alert("Please enter Member No, Full Name, and Phone Number.");
+      document.getElementById('bs-tot-liab-equity').innerText = `₦${Number(bs.total_liabilities_and_equity).toLocaleString()}`;
     }
 
-    const data = await apiFetch('/admin/add-member', {
-      method: 'POST',
-      body: payload
-    });
-
-    if (data) {
-      alert(data.message || 'Member onboarded successfully!');
-      closeModal('onboardModal');
+    function logout() {
+      localStorage.removeItem('coop_token');
+      localStorage.removeItem('coop_user');
+      location.reload();
     }
-  }
-
-  async function handleJournalEntry() {
-    const payload = {
-      entry_date: document.getElementById('j_date')?.value,
-      account_category: document.getElementById('j_cat')?.value,
-      account_head: document.getElementById('j_head')?.value.trim(),
-      debit: Math.max(0, Number(document.getElementById('j_debit')?.value || 0)),
-      credit: Math.max(0, Number(document.getElementById('j_credit')?.value || 0))
-    };
-
-    if (!payload.entry_date || !payload.account_head) {
-      return alert("Please select Entry Date and specify Account Head (Particulars).");
-    }
-
-    const data = await apiFetch('/admin/post-journal-entry', {
-      method: 'POST',
-      body: payload
-    });
-
-    if (data) {
-      alert(data.message || 'Journal entry posted successfully!');
-      statementData = null;
-      closeModal('journalModal');
-    }
-  }
-
-  async function handleGrantLoan() {
-    const payload = {
-      member_no: document.getElementById('l_member_no')?.value.trim(),
-      loan_type: document.getElementById('l_type')?.value,
-      principal_amount: Number(document.getElementById('l_amount')?.value || 0),
-      disbursement_date: document.getElementById('l_date')?.value || new Date().toISOString().split('T')[0]
-    };
-
-    if (!payload.member_no || payload.principal_amount <= 0) {
-      return alert("Please enter Member No and a positive loan amount.");
-    }
-
-    const data = await apiFetch('/admin/grant-loan', {
-      method: 'POST',
-      body: payload
-    });
-
-    if (data) {
-      alert(data.message || 'Loan granted successfully!');
-      closeModal('loanModal');
-    }
-  }
-
-  async function generateAndPrintLedger() {
-    const memberNo = document.getElementById('pl_member_no')?.value.trim();
-    const year = document.getElementById('pl_year')?.value.trim() || new Date().getFullYear();
-
-    if (!memberNo) return alert("Please enter a Member Number.");
-
-    const data = await apiFetch(`/admin/personal-ledger?member_no=${encodeURIComponent(memberNo)}&year=${year}`);
-
-    if (data) {
-      const prNo = document.getElementById('pr_member_no');
-      const prName = document.getElementById('pr_member_name');
-      const prYr = document.getElementById('pr_year');
-      if (prNo) prNo.innerText = data.member.member_no || memberNo;
-      if (prName) prName.innerText = data.member.full_name || 'N/A';
-      if (prYr) prYr.innerText = data.year;
-
-      const tbody = document.getElementById('pr_ledger_rows');
-      if (tbody) {
-        tbody.innerHTML = '';
-
-        let runningSC = Number(data.member.share_capital || 0);
-        let runningCapMob = Number(data.member.cap_mob || 0);
-        let runningTS = Number(data.member.thrift_savings || 0);
-        let runningSoc = Number(data.member.social_dues || 0);
-        let runningNormalLoan = Number(data.member.loan_balance || 0);
-        let runningEduLoan = Number(data.member.edu_loan_balance || 0);
-
-        const openTr = document.createElement('tr');
-        openTr.className = "border-b border-black font-mono font-bold bg-gray-50";
-        openTr.innerHTML = `
-          <td class="border border-black p-1">01-01-${year}</td>
-          <td class="border border-black p-1 text-left">Balance b/f</td>
-          <td class="border border-black p-1">-</td>
-          <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningSC.toLocaleString()}</td>
-          <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningCapMob.toLocaleString()}</td>
-          <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningTS.toLocaleString()}</td>
-          <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningSoc.toLocaleString()}</td>
-          <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningNormalLoan.toLocaleString()}</td>
-          <td class="border border-black p-1">-</td><td class="border border-black p-1">-</td><td class="border border-black p-1">₦${runningEduLoan.toLocaleString()}</td>
-          <td class="border border-black p-1">-</td>
-        `;
-        tbody.appendChild(openTr);
-
-        if (data.transactions && data.transactions.length > 0) {
-          data.transactions.forEach(t => {
-            const scCr = Number(t.share_capital || 0);
-            const mobCr = Number(t.cap_mobilization || 0);
-            const tsCr = Number(t.thrift_savings || 0);
-            const socCr = Number(t.social_dues || 0);
-            const nlCr = Number(t.normal_loan_repay || 0);
-            const eduCr = Number(t.edu_loan_repay || 0);
-
-            runningSC += scCr;
-            runningCapMob += mobCr;
-            runningTS += tsCr;
-            runningSoc += socCr;
-            runningNormalLoan = Math.max(0, runningNormalLoan - nlCr);
-            runningEduLoan = Math.max(0, runningEduLoan - eduCr);
-
-            const totalCr = tsCr + scCr + socCr + nlCr + eduCr + Number(t.special_deposit || 0);
-
-            const tr = document.createElement('tr');
-            tr.className = "border-b border-black font-mono";
-            tr.innerHTML = `
-              <td class="border border-black p-1">${t.payment_date || ''}</td>
-              <td class="border border-black p-1 text-left">SC, T/S, S/D, L/R</td>
-              <td class="border border-black p-1 font-bold">₦${totalCr.toLocaleString()}</td>
-              <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${scCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningSC.toLocaleString()}</td>
-              <td class="border border-black p-1">₦${mobCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningCapMob.toLocaleString()}</td>
-              <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${tsCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningTS.toLocaleString()}</td>
-              <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${socCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningSoc.toLocaleString()}</td>
-              <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${nlCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningNormalLoan.toLocaleString()}</td>
-              <td class="border border-black p-1">-</td><td class="border border-black p-1">₦${eduCr.toLocaleString()}</td><td class="border border-black p-1">₦${runningEduLoan.toLocaleString()}</td>
-              <td class="border border-black p-1">₦${Number(t.loan_interest || 0).toLocaleString()}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        }
-      }
-
-      closeModal('ledgerPrintModal');
-      setTimeout(() => { window.print(); }, 300);
-    }
-  }
-
-  function logout() {
-    localStorage.removeItem('coop_token');
-    localStorage.removeItem('coop_user');
-    location.reload();
-  }
-</script>
+  </script>
 </body>
 </html>
