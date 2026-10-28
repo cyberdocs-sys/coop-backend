@@ -917,61 +917,6 @@
       localStorage.removeItem('coop_user');
       location.reload();
     }
-     
-  // 1. Loading Overlay Helper Functions
-function showLoading(msg) {
-  const loader = document.getElementById('global-loader');
-  if (loader) {
-    if (msg) loader.querySelector('p').innerText = msg;
-    loader.classList.remove('hidden-loader');
-  }
-}
-
-function hideLoading() {
-  const loader = document.getElementById('global-loader');
-  if (loader) loader.classList.add('hidden-loader');
-}
-
-// Automatically show spinner on all fetch calls (Cold Start support)
-const originalFetch = window.fetch;
-window.fetch = async function(...args) {
-  showLoading();
-  try {
-    const response = await originalFetch(...args);
-    return response;
-  } finally {
-    hideLoading();
-  }
-};
-
-// 2. Phone Hardware Back Button & Screen Switching Navigation
-function showScreen(screenId) {
-  // Explicitly hide all screen containers including login
-  const screens = ['login-view', 'dashboard-view', 'post-remittance-view', 'member-register-view', 'personal-ledger-view'];
-  screens.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('hidden');
-  });
-
-  // Show only the active screen
-  const target = document.getElementById(screenId);
-  if (target) target.classList.remove('hidden');
-
-  if (screenId !== 'dashboard-view' && screenId !== 'login-view') {
-    history.pushState({ screen: screenId }, '', `#${screenId}`);
-  }
-}
-
-window.onpopstate = function(event) {
-  const openModal = document.querySelector('.modal:not(.hidden)');
-  if (openModal) {
-    openModal.classList.add('hidden');
-    return;
-  }
-
-  // If back button pressed, return cleanly to dashboard
-  showScreen('dashboard-view');
-}
    </script>
 </body>
 </html>
