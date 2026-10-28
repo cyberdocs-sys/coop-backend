@@ -167,14 +167,25 @@ app.post('/api/auth/reset-password', authLimiter, async (req, res) => {
 // Member Dashboard Balances
 app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
   try {
+    // 1. YOUR ORIGINAL MEMBER QUERY (100% UNTOUCHED)
     const { data: member, error } = await supabase
       .from('members')
       .select('*')
       .eq('phone', req.user.phone)
       .maybeSingle();
 
-    if (error || !member) return res.status(404).json({ error: 'Member ledger not found.' });
+    if (error || !member) return res.status(404).json({ error: 'Member not found' });
 
+    // 2. READ-ONLY DATE LOOKUP (Does not alter any money/balance math)
+    const { data: latestDeduction } = await supabase
+      .from('monthly_deductions')
+      .select('created_at')
+      .eq('member_no', member.member_no)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // 3. YOUR ORIGINAL RESPONSE (Adding only the last_updated field)
     res.json({
       full_name: member.full_name || 'Member',
       member_no: member.member_no || '-',
@@ -183,10 +194,12 @@ app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
       thrift_savings: member.thrift_savings || 0,
       loan_balance: member.loan_balance || 0,
       edu_loan_balance: member.edu_loan_balance || 0,
-      special_deposit: member.special_deposit || 0
+      special_deposit: member.special_deposit || 0,
+      last_updated: latestDeduction ? latestDeduction.created_at : null
     });
+
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching personal ledger.' });
+    res.status(500).json({ error: 'Error fetching dashboard data' });
   }
 });
 
