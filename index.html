@@ -210,6 +210,9 @@
           <button onclick="showScreen('post-remittance-view')" class="bg-emerald-700 hover:bg-emerald-600 p-2.5 rounded-lg text-xs font-semibold text-left col-span-2 flex items-center gap-2">
             <i class="fa-solid fa-money-bill-transfer text-yellow-300"></i> Post Monthly Remittance & Payment Date
           </button>
+          <button onclick="openGrantLoanModal()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow flex items-center justify-center gap-2 text-xs">
+  <i class="fa-solid fa-hand-holding-dollar text-sm"></i> Grant / Issue Member Loan
+</button>
           <button onclick="showScreen('ledger-search-view')" class="bg-slate-700 p-2.5 rounded-lg text-xs font-semibold hover:bg-slate-600 text-left">
             <i class="fa-solid fa-book mr-1 text-emerald-400"></i> Member Register
           </button>
@@ -917,6 +920,113 @@
       localStorage.removeItem('coop_user');
       location.reload();
     }
-   </script>
+       
+    // --- GRANT LOAN FUNCTIONS ---
+    function openGrantLoanModal() {
+      const modal = document.getElementById('grant-loan-modal');
+      if (!modal) return;
+      
+      const select = document.getElementById('loan-member-id');
+      if (select && window.allMembersList) {
+        select.innerHTML = '<option value="">-- Choose Member --</option>' + 
+          window.allMembersList.map(m => `<option value="${m.id}">${m.full_name} (${m.member_no})</option>`).join('');
+      }
+      
+      modal.classList.remove('hidden');
+    }
+
+    function closeGrantLoanModal() {
+      const modal = document.getElementById('grant-loan-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function calculateUpfrontInterest() {
+      const type = document.getElementById('loan-type-select').value;
+      const gross = parseFloat(document.getElementById('loan-gross-amount').value) || 0;
+      const rate = type === 'normal' ? 0.10 : 0.05;
+      const upfront = gross * rate;
+      const net = gross - upfront;
+
+      document.getElementById('lbl-upfront-int').innerText = `₦${upfront.toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
+      document.getElementById('lbl-net-disbursed').innerText = `₦${net.toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
+    }
+
+    async function submitLoanGrant(e) {
+      e.preventDefault();
+      const member_id = document.getElementById('loan-member-id').value;
+      const loan_type = document.getElementById('loan-type-select').value;
+      const gross_amount = parseFloat(document.getElementById('loan-gross-amount').value);
+
+      if (!member_id || !gross_amount || gross_amount <= 0) {
+        alert('Please fill out all fields correctly.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/loans/grant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ member_id, loan_type, gross_amount })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Loan granted successfully! Net disbursed: ₦${data.summary.net_disbursed.toLocaleString()}`);
+          closeGrantLoanModal();
+          location.reload();
+        } else {
+          alert(`Error: ${data.error || 'Failed to grant loan'}`);
+        }
+      } catch (err) {
+        console.error('Error issuing loan:', err);
+        alert('Failed to connect to server.');
+      }
+    }
+  </script>
+
+  <!-- GRANT LOAN MODAL CONTAINER -->
+  <div id="grant-loan-modal" class="modal hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-2xl p-5 space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i class="fa-solid fa-hand-holding-dollar text-amber-600"></i> Grant Member Loan
+        </h3>
+        <button onclick="closeGrantLoanModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">&times;</button>
+      </div>
+
+      <form id="grant-loan-form" onsubmit="submitLoanGrant(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Select Member</label>
+          <select id="loan-member-id" required class="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-amber-500">
+            <option value="">-- Choose Member --</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Loan Type</label>
+          <select id="loan-type-select" onchange="calculateUpfrontInterest()" required class="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-amber-500">
+            <option value="normal">Normal / Regular Loan (10% Upfront Interest)</option>
+            <option value="educational">Educational Loan (5% Upfront Interest)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Gross Loan Amount (₦)</label>
+          <input type="number" id="loan-gross-amount" oninput="calculateUpfrontInterest()" min="1" step="any" placeholder="e.g. 500000" required class="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-amber-500" />
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-lg space-y-1 text-xs text-slate-600 border">
+          <div class="flex justify-between"><span>Upfront Interest:</span> <span id="lbl-upfront-int" class="font-bold text-amber-700">₦0.00</span></div>
+          <div class="flex justify-between font-bold text-slate-800 border-t pt-1"><span>Net Cash Disbursed:</span> <span id="lbl-net-disbursed" class="text-emerald-700">₦0.00</span></div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeGrantLoanModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-xs font-semibold">Cancel</button>
+          <button type="submit" class="flex-1 bg-amber-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-amber-700 shadow">Confirm & Issue Loan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </body>
 </html>
