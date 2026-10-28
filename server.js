@@ -656,5 +656,90 @@ app.get('/api/admin/personal-ledger', authenticateToken, requireRoles('ADMIN', '
   }
 });
 
+// POST /api/loans/grant - Grant loan with upfront interest deduction
+app.post('/api/loans/grant', async (req, res) => {
+  try {
+    const { member_id, loan_type, gross_amount, issue_date } = req.body;
+
+    if (!member_id || !loan_type || !gross_amount || gross_amount <= 0) {
+      return res.status(400).json({ error: 'Valid member_id, loan_type, and gross_amount are required.' });
+    }
+
+    const gross = parseFloat(gross_amount);
+    let interestRate = 0;
+
+    if (loan_type === 'normal') {
+      interestRate = 0.10; // 10% for Normal Loans
+    } else if (loan_type === 'educational') {
+      interestRate = 0.05; // 5% for Educational Loans
+    } else {
+      return res.status(400).json({ error: 'Invalid loan_type. Must be "normal" or "educational".' });
+    }
+
+    const upfrontInterest = gross * interestRate;
+    const netDisbursed = gross - upfrontInterest;
+
+    // 1. Fetch current member loan balance
+    const { data: member, error: fetchErr } = await supabase
+      .from('members')
+      .select('id, normal_loan_bal, edu_loan_bal')
+      .eq('id', member_id)
+      .single();
+
+    if (fetchErr || !member) {
+      return res.status(404).json({ error: 'Member not found.' });
+    }
+
+    // 2. Calculate new loan balance
+    const balanceKey = loan_type === 'normal' ? 'normal_loan_bal' : 'edu_loan_bal';
+    const currentBal = parseFloat(member[balanceKey] || 0);
+    const newBal = currentBal + gross;
+
+    // 3. Update member's loan balance in database
+    const { error: updateErr } = await supabase
+      .from('members')
+      .update({ [balanceKey]: newBal })
+      .eq('id', member_id);
+
+    if (updateErr) {
+      return res.status(500).json({ error: 'Failed to update member loan balance.' });
+    }
+
+    // 4. Log disbursement transaction in monthly_remittances
+    const remittanceEntry = {
+      member_id,
+      remittance_date: issue_date || new Date().toISOString().split('T')[0],
+      narrative: `LOAN DISBURSEMENT (${loan_type.toUpperCase()}) - Gross: N${gross.toLocaleString()}, Upfront Int: N${upfrontInterest.toLocaleString()}`,
+      gross_loan_granted: gross,
+      upfront_interest_deducted: upfrontInterest,
+      net_cash_disbursed: netDisbursed,
+      created_at: new Date().toISOString()
+    };
+
+    const { error: logErr } = await supabase
+      .from('monthly_remittances')
+      .insert([remittanceEntry]);
+
+    if (logErr) {
+      console.warn('Loan balance updated, but remittance log insertion failed:', logErr.message);
+    }
+
+    return res.status(200).json({
+      message: 'Loan successfully granted.',
+      summary: {
+        member_id,
+        loan_type,
+        gross_amount: gross,
+        upfront_interest: upfrontInterest,
+        net_disbursed: netDisbursed,
+        new_outstanding_balance: newBal
+      }
+    });
+
+  } catch (err) {
+    console.error('Server error during loan grant:', err);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`DTMPCS Server running on port ${PORT}`));
