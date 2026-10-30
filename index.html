@@ -933,22 +933,36 @@
   }
 
   const select = document.getElementById('loan-member-id');
-  if (select) {
-    select.innerHTML = '<option value="">Loading members...</option>';
-    try {
-      const res = await fetch('/api/members');
-      const members = await res.json();
-      
-      if (Array.isArray(members) && members.length > 0) {
-        select.innerHTML = '<option value="">-- Choose Member --</option>' + 
-          members.map(m => `<option value="${m.id}">${m.full_name} (${m.member_no})</option>`).join('');
-      } else {
-        select.innerHTML = '<option value="">No members found</option>';
-      }
-    } catch (err) {
-      console.error('Failed to fetch members:', err);
-      select.innerHTML = '<option value="">Error loading members</option>';
+  if (!select) return;
+
+  select.innerHTML = '<option value="">Loading members...</option>';
+
+  try {
+    let list = window.allMembersList || window.membersData || [];
+
+    // If not in window state, fetch from API with stored auth headers
+    if (!list || list.length === 0) {
+      const token = localStorage.getItem('coop_token');
+      const res = await fetch('/api/members', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      const data = await res.json();
+      list = Array.isArray(data) ? data : (data.members || data.data || []);
     }
+
+    if (list && list.length > 0) {
+      select.innerHTML = '<option value="">-- Choose Member --</option>' + 
+        list.map(m => {
+          const name = m.full_name || m.name || `${m.first_name || ''} ${m.last_name || ''}`.trim();
+          const no = m.member_no || m.account_no || m.id;
+          return `<option value="${m.id}">${name} (${no})</option>`;
+        }).join('');
+    } else {
+      select.innerHTML = '<option value="">No members found</option>';
+    }
+  } catch (err) {
+    console.error('Error populating members:', err);
+    select.innerHTML = '<option value="">Error loading members</option>';
   }
 
   modal.classList.remove('hidden');
