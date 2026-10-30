@@ -923,17 +923,23 @@
        
     // --- GRANT LOAN FUNCTIONS ---
     function openGrantLoanModal() {
-      const modal = document.getElementById('grant-loan-modal');
-      if (!modal) return;
-      
-      const select = document.getElementById('loan-member-id');
-      if (select && window.allMembersList) {
-        select.innerHTML = '<option value="">-- Choose Member --</option>' + 
-          window.allMembersList.map(m => `<option value="${m.id}">${m.full_name} (${m.member_no})</option>`).join('');
-      }
-      
-      modal.classList.remove('hidden');
-    }
+  const modal = document.getElementById('grant-loan-modal');
+  if (!modal) return;
+
+  // Auto-fill today's date (backdatable by user)
+  const dateInput = document.getElementById('loan-issue-date');
+  if (dateInput && !dateInput.value) {
+    dateInput.value = new Date().toISOString().split('T')[0];
+  }
+  
+  const select = document.getElementById('loan-member-id');
+  if (select && window.allMembersList) {
+    select.innerHTML = '<option value="">-- Choose Member --</option>' + 
+      window.allMembersList.map(m => `<option value="${m.id}">${m.full_name} (${m.member_no})</option>`).join('');
+  }
+  
+  modal.classList.remove('hidden');
+}
 
     function closeGrantLoanModal() {
       const modal = document.getElementById('grant-loan-modal');
@@ -952,36 +958,36 @@
     }
 
     async function submitLoanGrant(e) {
-      e.preventDefault();
-      const member_id = document.getElementById('loan-member-id').value;
-      const loan_type = document.getElementById('loan-type-select').value;
-      const gross_amount = parseFloat(document.getElementById('loan-gross-amount').value);
+  e.preventDefault();
+  const member_id = document.getElementById('loan-member-id').value;
+  const loan_type = document.getElementById('loan-type-select').value;
+  const gross_amount = parseFloat(document.getElementById('loan-gross-amount').value);
+  const issue_date = document.getElementById('loan-issue-date').value;
 
-      if (!member_id || !gross_amount || gross_amount <= 0) {
-        alert('Please fill out all fields correctly.');
-        return;
-      }
+  if (!member_id || !gross_amount || gross_amount <= 0 || !issue_date) {
+    alert('Please fill out all fields correctly including the issue date.');
+    return;
+  }
 
-      try {
-        const res = await fetch('/api/loans/grant', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ member_id, loan_type, gross_amount })
-        });
+  try {
+    const res = await fetch('/api/loans/grant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id, loan_type, gross_amount, issue_date })    });
 
-        const data = await res.json();
-        if (res.ok) {
-          alert(`Loan granted successfully! Net disbursed: ₦${data.summary.net_disbursed.toLocaleString()}`);
-          closeGrantLoanModal();
-          location.reload();
-        } else {
-          alert(`Error: ${data.error || 'Failed to grant loan'}`);
-        }
-      } catch (err) {
-        console.error('Error issuing loan:', err);
-        alert('Failed to connect to server.');
-      }
+    const data = await res.json();
+    if (res.ok) {
+      alert(`Loan granted successfully on ${issue_date}! Net disbursed: ₦${data.summary.net_disbursed.toLocaleString()}`);
+      closeGrantLoanModal();
+      location.reload();
+    } else {
+      alert(`Error: ${data.error || 'Failed to grant loan'}`);
     }
+  } catch (err) {
+    console.error('Error issuing loan:', err);
+    alert('Failed to connect to server.');
+  }
+}
   </script>
 
   <!-- GRANT LOAN MODAL CONTAINER -->
@@ -1009,7 +1015,12 @@
             <option value="educational">Educational Loan (5% Upfront Interest)</option>
           </select>
         </div>
-
+        
+<div>
+  <label class="block text-xs font-bold text-slate-700 mb-1">Disbursement / Issue Date</label>
+  <input type="date" id="loan-issue-date" required class="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-amber-500" />
+</div>
+        
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Gross Loan Amount (₦)</label>
           <input type="number" id="loan-gross-amount" oninput="calculateUpfrontInterest()" min="1" step="any" placeholder="e.g. 500000" required class="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-amber-500" />
