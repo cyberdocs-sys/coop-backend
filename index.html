@@ -922,7 +922,7 @@
     }
        
     // --- GRANT LOAN FUNCTIONS ---
-    function openGrantLoanModal() {
+    async function openGrantLoanModal() {
   const modal = document.getElementById('grant-loan-modal');
   if (!modal) return;
 
@@ -931,13 +931,26 @@
   if (dateInput && !dateInput.value) {
     dateInput.value = new Date().toISOString().split('T')[0];
   }
-  
+
   const select = document.getElementById('loan-member-id');
-  if (select && window.allMembersList) {
-    select.innerHTML = '<option value="">-- Choose Member --</option>' + 
-      window.allMembersList.map(m => `<option value="${m.id}">${m.full_name} (${m.member_no})</option>`).join('');
+  if (select) {
+    select.innerHTML = '<option value="">Loading members...</option>';
+    try {
+      const res = await fetch('/api/members');
+      const members = await res.json();
+      
+      if (Array.isArray(members) && members.length > 0) {
+        select.innerHTML = '<option value="">-- Choose Member --</option>' + 
+          members.map(m => `<option value="${m.id}">${m.full_name} (${m.member_no})</option>`).join('');
+      } else {
+        select.innerHTML = '<option value="">No members found</option>';
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+      select.innerHTML = '<option value="">Error loading members</option>';
+    }
   }
-  
+
   modal.classList.remove('hidden');
 }
 
