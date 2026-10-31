@@ -662,7 +662,7 @@ app.post('/api/loans/grant', async (req, res) => {
     const { member_id, loan_type, gross_amount, issue_date } = req.body;
 
     if (!member_id || !loan_type || !gross_amount || gross_amount <= 0) {
-      return res.status(400).json({ error: 'Valid member_id, loan_type, and gross_amount are required.' });
+      return res.status(400).json({ error: 'Valid member_no, loan_type, and gross_amount are required.' });
     }
 
     const gross = parseFloat(gross_amount);
@@ -682,8 +682,8 @@ app.post('/api/loans/grant', async (req, res) => {
     // 1. Fetch current member loan balance
     const { data: member, error: fetchErr } = await supabase
       .from('members')
-      .select('id, normal_loan_bal, edu_loan_bal')
-      .eq('id', member_id)
+      .select('member_no, loan_bal, edu_loan_bal')
+      .eq('member_no', member_id)
       .single();
 
     if (fetchErr || !member) {
@@ -699,7 +699,7 @@ app.post('/api/loans/grant', async (req, res) => {
     const { error: updateErr } = await supabase
       .from('members')
       .update({ [balanceKey]: newBal })
-      .eq('id', member_id);
+      .eq('member_no', cleanNo);
 
     if (updateErr) {
       return res.status(500).json({ error: 'Failed to update member loan balance.' });
