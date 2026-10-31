@@ -213,10 +213,62 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
       .from('monthly_deductions')
       .select('*')
       .eq('member_no', targetNo.trim())
-      .order('payment_date', { ascending: false });
+      .order('payment_date', { ascending: true });
 
     if (error) throw error;
-    res.json(records || []);
+          let runningThrift = 0;
+      let runningShares = 0;
+      let runningLoan = 0;
+      let runningEduLoan = 0;
+      let runningSpecial = 0;
+
+      const scheduleWithBalances = (records || []).map(r => {
+        // Cr increases savings/repayments; Dr decreases or increases loans
+        const thriftCr = parseFloat(r.thrift_savings || 0);
+        const thriftDr = parseFloat(r.thrift_withdrawal || 0);
+        runningThrift += (thriftCr - thriftDr);
+
+        const sharesCr = parseFloat(r.share_capital || 0);
+        const sharesDr = parseFloat(r.shares_withdrawal || 0);
+        runningShares += (sharesCr - sharesDr);
+
+        const loanCr = parseFloat(r.loan_repayment || 0);
+        const loanDr = parseFloat(r.loan_disbursed || 0);
+        runningLoan += (loanDr - loanCr);
+
+        const eduCr = parseFloat(r.edu_loan_repayment || 0);
+        const eduDr = parseFloat(r.edu_loan_disbursed || 0);
+        runningEduLoan += (eduDr - eduCr);
+
+        const specialCr = parseFloat(r.special_deposit || 0);
+        const specialDr = parseFloat(r.special_withdrawal || 0);
+        runningSpecial += (specialCr - specialDr);
+
+        return {
+          ...r,
+          thrift_dr: thriftDr,
+          thrift_cr: thriftCr,
+          thrift_bal: runningThrift,
+
+          shares_dr: sharesDr,
+          shares_cr: sharesCr,
+          shares_bal: runningShares,
+
+          loan_dr: loanDr,
+          loan_cr: loanCr,
+          loan_bal: runningLoan,
+
+          edu_loan_dr: eduDr,
+          edu_loan_cr: eduCr,
+          edu_loan_bal: runningEduLoan,
+
+          special_dr: specialDr,
+          special_cr: specialCr,
+          special_bal: runningSpecial
+        };
+      });
+
+      res.json(scheduleWithBalances);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch schedule.' });
   }
