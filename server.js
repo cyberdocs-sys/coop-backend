@@ -683,8 +683,8 @@ app.post('/api/loans/grant', async (req, res) => {
     const { data: member, error: fetchErr } = await supabase
       .from('members')
       .select('member_no, loan_bal, edu_loan_bal')
-      .eq('member_no', member_id)
-      .single();
+      .eq('member_no', member_id.trim())
+      .maybeSingle();
 
     if (fetchErr || !member) {
       return res.status(404).json({ error: 'Member not found.' });
