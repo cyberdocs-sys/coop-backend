@@ -469,7 +469,7 @@
   </main>
 
    <script>
-    const API_BASE = 'https://coop-backend-api.onrender.com/api';
+    const API_BASE = 'https://coop-backend-api.onrender.com';
     let authToken = localStorage.getItem('coop_token') || '';
     let currentUser = JSON.parse(localStorage.getItem('coop_user') || '{}');
     let statementData = null;
@@ -619,7 +619,7 @@
       if (password !== confirm) return alert('Passwords do not match.');
 
       try {
-        const res = await fetch(`${API_BASE}/auth/activate`, {
+        const res = await fetch(`${API_BASE}/api/auth/activate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone, password })
@@ -642,7 +642,7 @@
       const newPassword = document.getElementById('reset-password').value.trim();
 
       try {
-        const res = await fetch(`${API_BASE}/auth/reset-password`, {
+        const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone, newPassword })
@@ -670,7 +670,7 @@
 
     async function fetchDashboardBalances() {
       try {
-        const res = await fetch(`${API_BASE}/member/dashboard`, {
+        const res = await fetch(`${API_BASE}/api/member/dashboard`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const data = await res.json();
@@ -698,7 +698,7 @@
       tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Loading schedule...</td></tr>`;
 
       try {
-        const res = await fetch(`${API_BASE}/member/monthly-schedule`, {
+        const res = await fetch(`${API_BASE}/api/member/monthly-schedule`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const records = await res.json();
@@ -756,7 +756,7 @@
       container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Generating summary...</p>`;
 
       try {
-        const res = await fetch(`${API_BASE}/admin/executive-summary?month_year=${month}`, {
+        const res = await fetch(`${API_BASE}/api/admin/executive-summary?month_year=${month}`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const s = await res.json();
@@ -808,7 +808,7 @@
       const container = document.getElementById('ledger-results');
 
       try {
-        const res = await fetch(`${API_BASE}/admin/members/search?q=${query}`, {
+        const res = await fetch(`${API_BASE}/api/admin/members/search?q=${query}`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const members = await res.json();
@@ -852,7 +852,7 @@
       if (statementData) return renderFinancialStatements(statementData);
 
       try {
-        const res = await fetch(`${API_BASE}/admin/financial-statements`, {
+        const res = await fetch(`${API_BASE}/api/admin/financial-statements`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const data = await res.json();
@@ -964,7 +964,7 @@
   }
 
   try {
-    const res = await fetch(API_BASE + '/api/loans/grant', {
+    const res = await fetch(`${API_BASE}/api/loans/grant`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
