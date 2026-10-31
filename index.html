@@ -964,7 +964,7 @@
   }
 
   try {
-    const res = await fetch('/api/loans/grant', {
+    const res = await fetch(`${API_BASE}/api/loans/grant`, {
       method: 'POST',
       headers: { 
   'Content-Type': 'application/json',
