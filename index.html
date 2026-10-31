@@ -922,48 +922,15 @@
     }
        
     // --- GRANT LOAN FUNCTIONS ---
-    async function openGrantLoanModal() {
+    function openGrantLoanModal() {
   const modal = document.getElementById('grant-loan-modal');
   if (!modal) return;
 
-  // Auto-fill today's date (backdatable by user)
+  const memberInput = document.getElementById('loan-member-id');
+  if (memberInput) memberInput.value = '';
+
   const dateInput = document.getElementById('loan-issue-date');
-  if (dateInput && !dateInput.value) {
-    dateInput.value = new Date().toISOString().split('T')[0];
-  }
-
-  const select = document.getElementById('loan-member-id');
-  if (!select) return;
-
-  select.innerHTML = '<option value="">Loading members...</option>';
-
-  try {
-    let list = window.allMembersList || window.membersData || [];
-
-    // If not in window state, fetch from API with stored auth headers
-    if (!list || list.length === 0) {
-      const token = localStorage.getItem('coop_token');
-      const res = await fetch('/api/members', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      const data = await res.json();
-      list = Array.isArray(data) ? data : (data.members || data.data || []);
-    }
-
-    if (list && list.length > 0) {
-      select.innerHTML = '<option value="">-- Choose Member --</option>' + 
-        list.map(m => {
-          const name = m.full_name || m.name || `${m.first_name || ''} ${m.last_name || ''}`.trim();
-          const no = m.member_no || m.account_no || m.id;
-          return `<option value="${m.id}">${name} (${no})</option>`;
-        }).join('');
-    } else {
-      select.innerHTML = '<option value="">No members found</option>';
-    }
-  } catch (err) {
-    console.error('Error populating members:', err);
-    select.innerHTML = '<option value="">Error loading members</option>';
-  }
+  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
   modal.classList.remove('hidden');
 }
@@ -999,7 +966,10 @@
   try {
     const res = await fetch('/api/loans/grant', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('coop_token') || ''}`
+},
       body: JSON.stringify({ member_id, loan_type, gross_amount, issue_date })    });
 
     const data = await res.json();
@@ -1029,11 +999,9 @@
 
       <form id="grant-loan-form" onsubmit="submitLoanGrant(event)" class="space-y-3">
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Select Member</label>
-          <select id="loan-member-id" required class="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-amber-500">
-            <option value="">-- Choose Member --</option>
-          </select>
-        </div>
+  <label class="block text-xs font-bold text-slate-700 mb-1">Member Account No. or Member ID</label>
+  <input type="text" id="loan-member-id" required placeholder="e.g. DTMPS-0008" class="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-amber-500" />
+</div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Loan Type</label>
