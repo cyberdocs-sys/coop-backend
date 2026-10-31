@@ -320,18 +320,29 @@
 
       <div class="overflow-x-auto border rounded-xl shadow-sm bg-white">
         <table class="w-full text-left text-[11px] border-collapse min-w-[600px]">
-          <thead>
-            <tr class="bg-slate-900 text-white font-semibold">
-              <th class="p-2.5 border-b">Month</th>
-              <th class="p-2.5 border-b text-right">Total (₦)</th>
-              <th class="p-2.5 border-b text-right">Thrift</th>
-              <th class="p-2.5 border-b text-right">Shares</th>
-              <th class="p-2.5 border-b text-right">Social Dues</th>
-              <th class="p-2.5 border-b text-right">Normal Loan</th>
-              <th class="p-2.5 border-b text-right">Edu Loan</th>
-              <th class="p-2.5 border-b text-right">Special Dep.</th>
-            </tr>
-          </thead>
+      <thead class="bg-slate-100 text-slate-700 text-xs uppercase font-bold sticky top-0 border-b">
+  <tr>
+    <th rowspan="2" class="p-2 border-r text-left">Date</th>
+    <th colspan="3" class="p-2 border-r text-center bg-emerald-50 text-emerald-900">Thrift Savings</th>
+    <th colspan="3" class="p-2 border-r text-center bg-blue-50 text-blue-900">Share Capital</th>
+    <th colspan="3" class="p-2 border-r text-center bg-amber-50 text-amber-900">Normal Loan</th>
+    <th colspan="3" class="p-2 border-r text-center bg-rose-50 text-rose-900">Edu Loan</th>
+    <th colspan="3" class="p-2 border-r text-center bg-purple-50 text-purple-900">Special Deposit</th>
+    <th rowspan="2" class="p-2 text-right">Total Paid</th>
+  </tr>
+  <tr class="text-[10px] bg-slate-50">
+    <!-- Thrift -->
+    <th class="p-1 border-r text-right">Dr</th><th class="p-1 border-r text-right">Cr</th><th class="p-1 border-r text-right font-extrabold">Bal</th>
+    <!-- Shares -->
+    <th class="p-1 border-r text-right">Dr</th><th class="p-1 border-r text-right">Cr</th><th class="p-1 border-r text-right font-extrabold">Bal</th>
+    <!-- Normal Loan -->
+    <th class="p-1 border-r text-right">Dr</th><th class="p-1 border-r text-right">Cr</th><th class="p-1 border-r text-right font-extrabold">Bal</th>
+    <!-- Edu Loan -->
+    <th class="p-1 border-r text-right">Dr</th><th class="p-1 border-r text-right">Cr</th><th class="p-1 border-r text-right font-extrabold">Bal</th>
+    <!-- Special Deposit -->
+    <th class="p-1 border-r text-right">Dr</th><th class="p-1 border-r text-right">Cr</th><th class="p-1 border-r text-right font-extrabold">Bal</th>
+  </tr>
+</thead>
           <tbody id="schedule-table-body" class="divide-y bg-white"></tbody>
           <tfoot id="schedule-table-foot" class="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900"></tfoot>
         </table>
@@ -717,36 +728,50 @@
 
             return `
               <tr class="hover:bg-slate-50">
-                <td class="p-2.5 font-bold text-slate-700">${r.month_year}</td>
-                <td class="p-2.5 text-right font-bold text-emerald-700">₦${Number(r.total_amount || 0).toLocaleString()}</td>
-                <td class="p-2.5 text-right">₦${Number(r.thrift_savings || 0).toLocaleString()}</td>
-                <td class="p-2.5 text-right">₦${Number(r.share_capital || 0).toLocaleString()}</td>
-                <td class="p-2.5 text-right">₦${Number(r.social_dues || 0).toLocaleString()}</td>
-                <td class="p-2.5 text-right">₦${Number(r.loan_repayment || 0).toLocaleString()}</td>
-                <td class="p-2.5 text-right">₦${Number(r.edu_loan_repayment || 0).toLocaleString()}</td>
-                <td class="p-2.5 text-right">₦${Number(r.special_deposit || 0).toLocaleString()}</td>
-              </tr>
-            `;
+                <td class="p-2.5 font-bold text-slate-700 border-r">${r.payment_date ? new Date(r.payment_date).toLocaleDateString('en-GB') : (r.month_year || '-')}</td>
+                <      <!-- Thrift Savings -->
+      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.thrift_dr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right text-emerald-700 border-r">₦${Number(r.thrift_cr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-emerald-50/30">₦${Number(r.thrift_bal || 0).toLocaleString()}</td>
+
+      <!-- Share Capital -->
+      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.shares_dr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right text-blue-700 border-r">₦${Number(r.shares_cr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-blue-50/30">₦${Number(r.shares_bal || 0).toLocaleString()}</td>
+
+      <!-- Normal Loan -->
+      <td class="p-1.5 text-right text-amber-700 border-r">₦${Number(r.loan_dr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.loan_cr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-amber-50/30">₦${Number(r.loan_bal || 0).toLocaleString()}</td>
+
+      <!-- Edu Loan -->
+      <td class="p-1.5 text-right text-rose-700 border-r">₦${Number(r.edu_loan_dr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.edu_loan_cr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-rose-50/30">₦${Number(r.edu_loan_bal || 0).toLocaleString()}</td>
+
+      <!-- Special Deposit -->
+      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.special_dr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right text-purple-700 border-r">₦${Number(r.special_cr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-purple-50/30">₦${Number(r.special_bal || 0).toLocaleString()}</td>
+
+      <!-- Total Paid -->
+      <td class="p-2 text-right font-bold text-emerald-800">₦${Number(r.total_amount || 0).toLocaleString()}</td>
+    </tr>
+  `;
           }).join('');
 
           tfoot.innerHTML = `
-            <tr>
-              <td class="p-2.5">YTD TOTAL</td>
-              <td class="p-2.5 text-right text-emerald-800">₦${totals.total.toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${totals.thrift.toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${totals.shares.toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${totals.dues.toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${totals.loan.toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${totals.edu.toLocaleString()}</td>
-              <td class="p-2.5 text-right">₦${totals.special.toLocaleString()}</td>
+            <tr class="bg-slate-100 font-bold text-xs border-t-2 border-slate-300">
+              <td colspan="16" class="p-2.5 text-left uppercase text-slate-700">YTD TOTAL PAID IN:</td>
+              <td class="p-2.5 text-right text-emerald-800 text-sm font-extrabold">₦${totals.total.toLocaleString()}</td>
             </tr>
           `;
         } else {
-          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No monthly postings recorded yet.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="17" class="text-center py-6 text-slate-400">No monthly postings recorded yet.</td></tr>`;
           tfoot.innerHTML = '';
         }
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-500">Error loading schedule.</td></tr>`;
+     tbody.innerHTML = `<tr><td colspan="17" class="text-center py-6 text-red-500">Error loading schedule.</td></tr>`;
       }
     }
 
