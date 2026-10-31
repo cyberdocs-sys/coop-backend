@@ -726,6 +726,7 @@ app.post('/api/loans/grant', async (req, res) => {
 
     return res.status(200).json({
       message: 'Loan successfully granted.',
+            net_amount: netDisbursed,
       summary: {
         member_id,
         loan_type,
