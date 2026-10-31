@@ -952,8 +952,8 @@
     }
 
     async function submitLoanGrant(e) {
-  e.preventDefault();
-  const member_id = document.getElementById('loan-member-id').value;
+  if (e) e.preventDefault();
+  const member_id = document.getElementById('loan-member-id').value.trim();
   const loan_type = document.getElementById('loan-type-select').value;
   const gross_amount = parseFloat(document.getElementById('loan-gross-amount').value);
   const issue_date = document.getElementById('loan-issue-date').value;
@@ -964,27 +964,27 @@
   }
 
   try {
-  const res = await fetch(`${API_BASE}/api/loans/grant`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('coop_token') || '')'
-    },
-    body: JSON.stringify({ member_id, loan_type, gross_amount, issue_date })
-  });
+    const res = await fetch(API_BASE + '/api/loans/grant', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (localStorage.getItem('coop_token') || '')
+      },
+      body: JSON.stringify({ member_id, loan_type, gross_amount, issue_date })
+    });
 
-  const data = await res.json();
-  if (res.ok) {
-    alert(`Loan granted successfully on ${issue_date}! Net disbursed: ₦${data.net_amount || ''}`);
-    closeGrantLoanModal();
-    location.reload();
-  } else {
-    alert(`Error: ${data.error || 'Failed to grant loan'}`);
+    const data = await res.json();
+    if (res.ok) {
+      alert('Loan granted successfully on ' + issue_date + '! Net disbursed: ₦' + (data.net_amount || ''));
+      closeGrantLoanModal();
+      location.reload();
+    } else {
+      alert('Error: ' + (data.error || 'Failed to grant loan'));
+    }
+  } catch (err) {
+    console.error('Error issuing loan:', err);
+    alert('Failed to connect to server.');
   }
-} catch (err) {
-  console.error('Error issuing loan:', err);
-  alert('Failed to connect to server.');
- }
 }
   </script>
 
