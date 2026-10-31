@@ -984,20 +984,7 @@
 } catch (err) {
   console.error('Error issuing loan:', err);
   alert('Failed to connect to server.');
-}
-
-    const data = await res.json();
-    if (res.ok) {
-      alert(`Loan granted successfully on ${issue_date}! Net disbursed: ₦${data.summary.net_disbursed.toLocaleString()}`);
-      closeGrantLoanModal();
-      location.reload();
-    } else {
-      alert(`Error: ${data.error || 'Failed to grant loan'}`);
-    }
-  } catch (err) {
-    console.error('Error issuing loan:', err);
-    alert('Failed to connect to server.');
-  }
+ }
 }
   </script>
 
