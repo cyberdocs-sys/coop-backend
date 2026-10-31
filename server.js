@@ -682,8 +682,8 @@ app.post('/api/loans/grant', async (req, res) => {
     // 1. Fetch current member loan balance
     const { data: member, error: fetchErr } = await supabase
       .from('members')
-      .select('member_no, loan_bal, edu_loan_bal')
-      .ilike('member_no', member_id.trim())
+      .select('member_no, loan_balance, edu_loan_balance')
+      .eq('member_no', member_id.trim())
       .maybeSingle();
 
     if (fetchErr || !member) {
@@ -691,7 +691,7 @@ app.post('/api/loans/grant', async (req, res) => {
     }
 
     // 2. Calculate new loan balance
-    const balanceKey = loan_type === 'normal' ? 'normal_loan_bal' : 'edu_loan_bal';
+    const balanceKey = loan_type === 'normal' ? 'loan_balance' : 'edu_loan_balance';
     const currentBal = parseFloat(member[balanceKey] || 0);
     const newBal = currentBal + gross;
 
