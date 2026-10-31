@@ -707,7 +707,7 @@ app.post('/api/loans/grant', async (req, res) => {
 
     // 4. Log disbursement transaction in monthly_remittances
     const remittanceEntry = {
-      member_no: member_id
+      member_no: member_id,
       remittance_date: issue_date || new Date().toISOString().split('T')[0],
       narrative: `LOAN DISBURSEMENT (${loan_type.toUpperCase()}) - Gross: N${gross.toLocaleString()}, Upfront Int: N${upfrontInterest.toLocaleString()}`,
       gross_loan_granted: gross,
