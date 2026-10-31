@@ -209,17 +209,26 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
     const targetNo = req.user.member_no;
     if (!targetNo) return res.status(400).json({ error: 'Invalid member session.' });
 
-    const { data: records, error } = await supabase
-      .from('monthly_deductions')
-      .select('*')
-      .eq('member_no', targetNo.trim())
-      .order('payment_date', { ascending: true });
+          // 1. Fetch member's starting balances from database
+      const { data: member } = await supabase
+        .from('members')
+        .select('loan_balance, edu_loan_balance')
+        .eq('member_no', targetNo.trim())
+        .maybeSingle();
 
-    if (error) throw error;
-          let runningThrift = 0;
+      // 2. Fetch monthly records sorted chronologically
+      const { data: records, error } = await supabase
+        .from('monthly_deductions')
+        .select('*')
+        .eq('member_no', targetNo.trim())
+        .order('payment_date', { ascending: true });
+
+      if (error) throw error;
+
+      let runningThrift = 0;
       let runningShares = 0;
-      let runningLoan = 0;
-      let runningEduLoan = 0;
+      let runningLoan = parseFloat(member?.loan_balance || 0);
+      let runningEduLoan = parseFloat(member?.edu_loan_balance || 0);
       let runningSpecial = 0;
 
       const scheduleWithBalances = (records || []).map(r => {
