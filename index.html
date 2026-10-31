@@ -968,7 +968,7 @@
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('coop_token') || ''}`
+      'Authorization': `Bearer ${localStorage.getItem('coop_token') || '')
     },
     body: JSON.stringify({ member_id, loan_type, gross_amount, issue_date })
   });
