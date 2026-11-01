@@ -482,7 +482,7 @@
 
   </main>
 
-   <script>
+     <script>
     const API_BASE = 'https://coop-backend-api.onrender.com';
     let authToken = localStorage.getItem('coop_token') || '';
     let currentUser = JSON.parse(localStorage.getItem('coop_user') || '{}');
@@ -508,26 +508,23 @@
       }
     }
 
-     function updateUserLastUpdated(createdAtTimestamp) {
-  const updatedSpan = document.getElementById('user-updated');
-  if (!updatedSpan) return;
+    function updateUserLastUpdated(createdAtTimestamp) {
+      const updatedSpan = document.getElementById('user-updated');
+      if (!updatedSpan) return;
 
-  if (createdAtTimestamp) {
-    const dateObj = new Date(createdAtTimestamp);
-    
-    // Formats into e.g. "28 Oct 2026"
-    const formattedDate = dateObj.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+      if (createdAtTimestamp) {
+        const dateObj = new Date(createdAtTimestamp);
+        const formattedDate = dateObj.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+        updatedSpan.textContent = `Updated: ${formattedDate}`;
+      } else {
+        updatedSpan.textContent = 'Updated: N/A';
+      }
+    }
 
-    updatedSpan.textContent = `Updated: ${formattedDate}`;
-  } else {
-    updatedSpan.textContent = 'Updated: N/A';
-  }
-     }
-     
     function showScreen(screenId) {
       ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view', 'financial-statements-view', 'post-remittance-view'].forEach(id => {
         const el = document.getElementById(id);
@@ -707,34 +704,42 @@
     }
 
     async function fetchMonthlySchedule(targetMemberNo = null) {
-  try {
-    let url = `${API_URL}/api/member/monthly-schedule`;
-    if (targetMemberNo) {
-      url += `?member_no=${encodeURIComponent(targetMemberNo)}`;
-    }
+      try {
+        let url = `${API_BASE}/api/member/monthly-schedule`;
+        if (targetMemberNo) {
+          url += `?member_no=${encodeURIComponent(targetMemberNo)}`;
+        }
+
+        const token = localStorage.getItem('coop_token') || authToken;
 
         const res = await fetch(url, {
-      headers: {
-        'Authorization': 'Bearer ' + localStorage.getItem('token')
-      }
-    });
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
 
-    if (!res.ok) throw new Error('Failed to fetch schedule');
-    const records = await res.json();
+        if (!res.ok) throw new Error('Failed to fetch schedule');
+        const records = await res.json();
+
+        const tbody = document.getElementById('schedule-table-body');
+        const tfoot = document.getElementById('schedule-table-foot');
+
         if (!records || records.length === 0) {
-      document.getElementById('schedule-table-body').innerHTML = `
-        <tr>
-          <td colspan="20" class="p-4 text-center text-slate-400 italic">
-            No monthly postings recorded yet.
-          </td>
-        </tr>`;
-      document.getElementById('schedule-table-footer').innerHTML = '';
-      return;
-      }
-     
+          if (tbody) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="20" class="p-4 text-center text-slate-400 italic">
+                  No monthly postings recorded yet.
+                </td>
+              </tr>`;
+          }
+          if (tfoot) tfoot.innerHTML = '';
+          return;
+        }
 
-      
-          let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
+        let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
+
+        if (tbody) {
           tbody.innerHTML = records.map(r => {
             totals.total += Number(r.total_amount || 0);
             totals.thrift += Number(r.thrift_savings || 0);
@@ -747,52 +752,56 @@
             return `
               <tr class="hover:bg-slate-50">
                 <td class="p-2.5 font-bold text-slate-700 border-r">${r.payment_date ? new Date(r.payment_date).toLocaleDateString('en-GB') : (r.month_year || '-')}</td>
-      <!-- Thrift Savings -->
-      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.thrift_dr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right text-emerald-700 border-r">₦${Number(r.thrift_cr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-emerald-50/30">₦${Number(r.thrift_bal || 0).toLocaleString()}</td>
 
-      <!-- Share Capital -->
-      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.shares_dr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right text-blue-700 border-r">₦${Number(r.shares_cr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-blue-50/30">₦${Number(r.shares_bal || 0).toLocaleString()}</td>
+                <!-- Thrift Savings -->
+                <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.thrift_dr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right text-emerald-700 border-r">₦${Number(r.thrift_cr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-emerald-50/30">₦${Number(r.thrift_bal || 0).toLocaleString()}</td>
 
-      <!-- Normal Loan -->
-      <td class="p-1.5 text-right text-amber-700 border-r">₦${Number(r.loan_dr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.loan_cr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-amber-50/30">₦${Number(r.loan_bal || 0).toLocaleString()}</td>
+                <!-- Share Capital -->
+                <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.shares_dr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right text-blue-700 border-r">₦${Number(r.shares_cr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-blue-50/30">₦${Number(r.shares_bal || 0).toLocaleString()}</td>
 
-      <!-- Edu Loan -->
-      <td class="p-1.5 text-right text-rose-700 border-r">₦${Number(r.edu_loan_dr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.edu_loan_cr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-rose-50/30">₦${Number(r.edu_loan_bal || 0).toLocaleString()}</td>
+                <!-- Normal Loan -->
+                <td class="p-1.5 text-right text-amber-700 border-r">₦${Number(r.loan_dr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.loan_cr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-amber-50/30">₦${Number(r.loan_bal || 0).toLocaleString()}</td>
 
-      <!-- Special Deposit -->
-      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.special_dr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right text-purple-700 border-r">₦${Number(r.special_cr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-purple-50/30">₦${Number(r.special_bal || 0).toLocaleString()}</td>
+                <!-- Edu Loan -->
+                <td class="p-1.5 text-right text-rose-700 border-r">₦${Number(r.edu_loan_dr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.edu_loan_cr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-rose-50/30">₦${Number(r.edu_loan_bal || 0).toLocaleString()}</td>
 
-            <!-- Social Dues -->
-      <td class="p-1.5 text-right text-indigo-700 border-r">₦${Number(r.dues_dr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.dues_cr || 0).toLocaleString()}</td>
-      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-indigo-50/30">₦${Number(r.dues_bal || 0).toLocaleString()}</td>
+                <!-- Special Deposit -->
+                <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.special_dr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right text-purple-700 border-r">₦${Number(r.special_cr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-purple-50/30">₦${Number(r.special_bal || 0).toLocaleString()}</td>
 
-      <!-- Total Paid -->
-      <td class="p-2 text-right font-bold text-emerald-800">₦${Number(r.total_amount || 0).toLocaleString()}</td>
-    </tr>
-  `;
-}).join('');
+                <!-- Social Dues -->
+                <td class="p-1.5 text-right text-indigo-700 border-r">₦${Number(r.dues_dr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.dues_cr || 0).toLocaleString()}</td>
+                <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-indigo-50/30">₦${Number(r.dues_bal || 0).toLocaleString()}</td>
 
+                <!-- Total Paid -->
+                <td class="p-2 text-right font-bold text-emerald-800">₦${Number(r.total_amount || 0).toLocaleString()}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        if (tfoot) {
           tfoot.innerHTML = `
             <tr class="bg-slate-100 font-bold text-xs border-t-2 border-slate-300">
               <td colspan="19" class="p-2.5 text-left uppercase text-slate-700">YTD TOTAL PAID IN:</td>
               <td class="p-2.5 text-right text-emerald-800 text-sm font-extrabold">₦${totals.total.toLocaleString()}</td>
             </tr>
           `;
-     } catch (err) {
-    console.error('Fetch schedule error:', err);
-  }
-
+        }
+      } catch (err) {
+        console.error('Fetch schedule error:', err);
+      }
+    }
 
     async function fetchExecutiveSummary() {
       const month = document.getElementById('summary-month-filter').value;
@@ -941,7 +950,7 @@
           <td class="p-2 text-right text-emerald-800">₦${totDr.toLocaleString()}</td>
           <td class="p-2 text-right text-emerald-800">₦${totCr.toLocaleString()}</td>
         </tr>
-   `;
+      `;
 
       const bs = data.balance_sheet;
       document.getElementById('bs-assets').innerHTML = (bs.assets || []).map(a => `
@@ -964,20 +973,19 @@
       localStorage.removeItem('coop_user');
       location.reload();
     }
-       
-    // --- GRANT LOAN FUNCTIONS ---
+
     function openGrantLoanModal() {
-  const modal = document.getElementById('grant-loan-modal');
-  if (!modal) return;
+      const modal = document.getElementById('grant-loan-modal');
+      if (!modal) return;
 
-  const memberInput = document.getElementById('loan-member-id');
-  if (memberInput) memberInput.value = '';
+      const memberInput = document.getElementById('loan-member-id');
+      if (memberInput) memberInput.value = '';
 
-  const dateInput = document.getElementById('loan-issue-date');
-  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('loan-issue-date');
+      if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
-  modal.classList.remove('hidden');
-}
+      modal.classList.remove('hidden');
+    }
 
     function closeGrantLoanModal() {
       const modal = document.getElementById('grant-loan-modal');
@@ -996,40 +1004,40 @@
     }
 
     async function submitLoanGrant(e) {
-  if (e) e.preventDefault();
-  const member_id = document.getElementById('loan-member-id').value.trim();
-  const loan_type = document.getElementById('loan-type-select').value;
-  const gross_amount = parseFloat(document.getElementById('loan-gross-amount').value);
-  const issue_date = document.getElementById('loan-issue-date').value;
+      if (e) e.preventDefault();
+      const member_id = document.getElementById('loan-member-id').value.trim();
+      const loan_type = document.getElementById('loan-type-select').value;
+      const gross_amount = parseFloat(document.getElementById('loan-gross-amount').value);
+      const issue_date = document.getElementById('loan-issue-date').value;
 
-  if (!member_id || !gross_amount || gross_amount <= 0 || !issue_date) {
-    alert('Please fill out all fields correctly including the issue date.');
-    return;
-  }
+      if (!member_id || !gross_amount || gross_amount <= 0 || !issue_date) {
+        alert('Please fill out all fields correctly including the issue date.');
+        return;
+      }
 
-  try {
-    const res = await fetch(`${API_BASE}/api/loans/grant`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (localStorage.getItem('coop_token') || '')
-      },
-      body: JSON.stringify({ member_id, loan_type, gross_amount, issue_date })
-    });
+      try {
+        const res = await fetch(`${API_BASE}/api/loans/grant`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('coop_token') || '')
+          },
+          body: JSON.stringify({ member_id, loan_type, gross_amount, issue_date })
+        });
 
-    const data = await res.json();
-    if (res.ok) {
-      alert('Loan granted successfully on ' + issue_date + '! Net disbursed: ₦' + (data.net_amount || ''));
-      closeGrantLoanModal();
-      location.reload();
-    } else {
-      alert('Error: ' + (data.error || 'Failed to grant loan'));
-    }
-  } catch (err) {
-    console.error('Error issuing loan:', err);
-    alert('Failed to connect to server.');
-  }
-}
+        const data = await res.json();
+        if (res.ok) {
+          alert('Loan granted successfully on ' + issue_date + '! Net disbursed: ₦' + (data.net_amount || ''));
+          closeGrantLoanModal();
+          location.reload();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to grant loan'));
+        }
+      } catch (err) {
+        console.error('Error issuing loan:', err);
+        alert('Failed to connect to server.');
+      }
+    }    
   </script>
 
   <!-- GRANT LOAN MODAL CONTAINER -->
