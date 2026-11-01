@@ -722,7 +722,7 @@
       }
     }
 
-    async function fetchMonthlySchedule(targetMemberNo = null) {
+        async function fetchMonthlySchedule(targetMemberNo = null) {
       const tbody = document.getElementById('schedule-table-body');
       const tfoot = document.getElementById('schedule-table-foot');
 
@@ -731,11 +731,15 @@
       }
 
       try {
+        // Resolve active member identifier (from target input OR logged-in user profile)
+        const activeMember = (targetMemberNo && targetMemberNo.trim()) 
+          || (currentUser && (currentUser.member_no || currentUser.acc_no)) 
+          || '';
+
         let url = `${API_BASE}/api/member/monthly-schedule`;
-        
-        // Only append query parameter if Secretary/Admin explicitly targets another member
-        if (targetMemberNo && targetMemberNo.trim() !== '') {
-          url += `?member_no=${encodeURIComponent(targetMemberNo.trim())}`;
+        if (activeMember) {
+          const encoded = encodeURIComponent(activeMember);
+          url += `?member_no=${encoded}&acc_no=${encoded}&member_id=${encoded}`;
         }
 
         const token = localStorage.getItem('coop_token') || authToken;
@@ -760,7 +764,7 @@
             tbody.innerHTML = `
               <tr>
                 <td colspan="20" class="p-4 text-center text-slate-400 italic">
-                  No monthly postings or 2025 balances recorded yet ${targetMemberNo ? 'for ' + targetMemberNo : ''}.
+                  No monthly postings or 2025 balances recorded yet ${activeMember ? 'for ' + activeMember : ''}.
                 </td>
               </tr>`;
           }
@@ -838,59 +842,6 @@
         if (tbody) {
           tbody.innerHTML = `<tr><td colspan="20" class="p-4 text-center text-rose-600 font-bold text-xs">Error loading schedule: ${err.message}</td></tr>`;
         }
-      }
-    }
-  
-       async function fetchExecutiveSummary() {
-      const month = document.getElementById('summary-month-filter').value;
-      const container = document.getElementById('executive-summary-grid');
-      container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Generating summary...</p>`;
-
-      try {
-        const res = await fetch(`${API_BASE}/api/admin/executive-summary?month_year=${month}`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const s = await res.json();
-
-        if (res.ok) {
-          container.innerHTML = `
-            <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-              <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider border-b pb-1">1. Capital, Savings & Remittances</p>
-              <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>Total Paid In: <b class="block text-emerald-700 font-extrabold text-sm">₦${Number(s['1_total_paid_in']).toLocaleString()}</b></div>
-                <div>Share Capital: <b class="block text-slate-800">₦${Number(s['2_share_capital']).toLocaleString()}</b></div>
-                <div>Thrift Savings: <b class="block text-slate-800">₦${Number(s['3_thrift_savings']).toLocaleString()}</b></div>
-                <div>Special Deposits: <b class="block text-slate-800">₦${Number(s['15_special_deposits']).toLocaleString()}</b></div>
-                <div>Social Dues: <b class="block text-slate-800">₦${Number(s['4_social_dues']).toLocaleString()}</b></div>
-                <div>Registration Fees: <b class="block text-slate-800">₦${Number(s['16_registration_fees']).toLocaleString()}</b></div>
-              </div>
-            </div>
-
-            <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-              <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider border-b pb-1">2. Regular Loan Portfolio</p>
-              <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>Loan Disbursed: <b class="block text-slate-800">₦${Number(s['5_loan_given_out']).toLocaleString()}</b></div>
-                <div>Loan Refund: <b class="block text-emerald-700">₦${Number(s['7_loan_refund']).toLocaleString()}</b></div>
-                <div>Loan Balance: <b class="block text-amber-700 font-bold">₦${Number(s['8_loan_balance']).toLocaleString()}</b></div>
-                <div>Loan Interest: <b class="block text-slate-800">₦${Number(s['6_loan_interest']).toLocaleString()}</b></div>
-                <div class="col-span-2">Penal Interest (Regular): <b class="block text-rose-600">₦${Number(s['13_loan_penal_interest']).toLocaleString()}</b></div>
-              </div>
-            </div>
-
-            <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-              <p class="text-[11px] font-bold text-rose-800 uppercase tracking-wider border-b pb-1">3. Education Loan Portfolio</p>
-              <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>Edu Disbursed: <b class="block text-slate-800">₦${Number(s['9_edu_loan_given_out']).toLocaleString()}</b></div>
-                <div>Edu Refund: <b class="block text-emerald-700">₦${Number(s['11_edu_loan_refund']).toLocaleString()}</b></div>
-                <div>Edu Balance: <b class="block text-rose-700 font-bold">₦${Number(s['12_edu_loan_balance']).toLocaleString()}</b></div>
-                <div>Edu Interest: <b class="block text-slate-800">₦${Number(s['10_edu_loan_interest']).toLocaleString()}</b></div>
-                <div class="col-span-2">Penal Interest (Edu): <b class="block text-rose-600">₦${Number(s['14_edu_loan_penal_interest']).toLocaleString()}</b></div>
-              </div>
-            </div>
-          `;
-        }
-      } catch (err) {
-        container.innerHTML = `<p class="text-xs text-red-500 text-center py-4">Error loading summary.</p>`;
       }
     }
 
