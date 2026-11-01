@@ -713,9 +713,9 @@
       url += `?member_no=${encodeURIComponent(targetMemberNo)}`;
     }
 
-    const res = await fetch(url, {
+        const res = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
       }
     });
 
