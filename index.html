@@ -706,18 +706,32 @@
       }
     }
 
-    async function fetchMonthlySchedule() {
-      const tbody = document.getElementById('schedule-table-body');
-      const tfoot = document.getElementById('schedule-table-foot');
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Loading schedule...</td></tr>`;
+    async function fetchMonthlySchedule(targetMemberNo = null) {
+  try {
+    let url = `${API_URL}/api/member/monthly-schedule`;
+    if (targetMemberNo) {
+      url += `?member_no=${encodeURIComponent(targetMemberNo)}`;
+    }
 
-      try {
-        const res = await fetch(`${API_BASE}/api/member/monthly-schedule`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const records = await res.json();
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
 
-        if (res.ok && records.length > 0) {
+    if (!res.ok) throw new Error('Failed to fetch schedule');
+    const records = await res.json();
+        if (!records || records.length === 0) {
+      document.getElementById('schedule-table-body').innerHTML = `
+        <tr>
+          <td colspan="20" class="p-4 text-center text-slate-400 italic">
+            No monthly postings recorded yet.
+          </td>
+        </tr>`;
+      document.getElementById('schedule-table-footer').innerHTML = '';
+      return;
+        }
+  
           let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
 
           tbody.innerHTML = records.map(r => {
