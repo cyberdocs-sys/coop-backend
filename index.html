@@ -746,7 +746,7 @@
             return `
               <tr class="hover:bg-slate-50">
                 <td class="p-2.5 font-bold text-slate-700 border-r">${r.payment_date ? new Date(r.payment_date).toLocaleDateString('en-GB') : (r.month_year || '-')}</td>
-                <      <!-- Thrift Savings -->
+      <!-- Thrift Savings -->
       <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.thrift_dr || 0).toLocaleString()}</td>
       <td class="p-1.5 text-right text-emerald-700 border-r">₦${Number(r.thrift_cr || 0).toLocaleString()}</td>
       <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-emerald-50/30">₦${Number(r.thrift_bal || 0).toLocaleString()}</td>
