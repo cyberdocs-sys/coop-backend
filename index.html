@@ -730,10 +730,11 @@
         </tr>`;
       document.getElementById('schedule-table-footer').innerHTML = '';
       return;
-        }
-  
-          let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
+      }
+     
 
+      
+          let totals = { total: 0, thrift: 0, shares: 0, dues: 0, loan: 0, edu: 0, special: 0 };
           tbody.innerHTML = records.map(r => {
             totals.total += Number(r.total_amount || 0);
             totals.thrift += Number(r.thrift_savings || 0);
@@ -788,14 +789,10 @@
               <td class="p-2.5 text-right text-emerald-800 text-sm font-extrabold">₦${totals.total.toLocaleString()}</td>
             </tr>
           `;
-        } else {
-          tbody.innerHTML = `<tr><td colspan="17" class="text-center py-6 text-slate-400">No monthly postings recorded yet.</td></tr>`;
-          tfoot.innerHTML = '';
-        }
-      } catch (err) {
-     tbody.innerHTML = `<tr><td colspan="17" class="text-center py-6 text-red-500">Error loading schedule.</td></tr>`;
-      }
-    }
+     } catch (err) {
+    console.error('Fetch schedule error:', err);
+  }
+
 
     async function fetchExecutiveSummary() {
       const month = document.getElementById('summary-month-filter').value;
