@@ -206,25 +206,26 @@ app.get('/api/member/dashboard', authenticateToken, async (req, res) => {
 // Member 12-Month Schedule (SQL Database Filtered)
 app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
   try {
-    const targetNo = req.user.member_no;
-    if (!targetNo) return res.status(400).json({ error: 'Invalid member session.' });
+    const rawMemberNo = req.query.member_no || req.user.member_no;
+    if (!rawMemberNo) return res.status(400).json({ error: 'Member number missing' });
 
-          // 1. Fetch member's starting balances from database
-      cons      // 1. Fetch member's current database snapshot
-      const { data: member } = await supabase
-        .from('members')
-        .select('thrift_savings, share_capital, loan_balance, edu_loan_balance, special_deposit')
-        .eq('member_no', targetNo.trim())
-        .maybeSingle();
+    const targetNo = rawMemberNo.trim();
 
-      // 2. Fetch monthly records sorted chronologically
-      const { data: records, error } = await supabase
-        .from('monthly_deductions')
-        .select('*')
-        .eq('member_no', targetNo.trim())
-        .order('payment_date', { ascending: true });
+    // 1. Fetch member's current database snapshot
+    const { data: member } = await supabase
+      .from('members')
+      .select('thrift_savings, share_capital, loan_balance, edu_loan_balance, special_deposit')
+      .eq('member_no', targetNo)
+      .maybeSingle();
 
-      if (error) throw error;
+    // 2. Fetch monthly records sorted chronologically
+    const { data: records, error } = await supabase
+      .from('monthly_deductions')
+      .select('*')
+      .eq('member_no', targetNo)
+      .order('payment_date', { ascending: true });
+
+    if (error) throw error;
 
       // 3. Compute total payments recorded in the schedule
       let totalThriftCr = 0, totalThriftDr = 0;
