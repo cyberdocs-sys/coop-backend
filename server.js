@@ -210,9 +210,10 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
     if (!targetNo) return res.status(400).json({ error: 'Invalid member session.' });
 
           // 1. Fetch member's starting balances from database
+      cons      // 1. Fetch member's current database snapshot
       const { data: member } = await supabase
         .from('members')
-        .select('loan_balance, edu_loan_balance')
+        .select('thrift_savings, share_capital, loan_balance, edu_loan_balance, special_deposit')
         .eq('member_no', targetNo.trim())
         .maybeSingle();
 
@@ -225,14 +226,37 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 
       if (error) throw error;
 
-      let runningThrift = 0;
-      let runningShares = 0;
-      let runningLoan = parseFloat(member?.loan_balance || 0);
-      let runningEduLoan = parseFloat(member?.edu_loan_balance || 0);
-      let runningSpecial = 0;
+      // 3. Compute total payments recorded in the schedule
+      let totalThriftCr = 0, totalThriftDr = 0;
+      let totalSharesCr = 0, totalSharesDr = 0;
+      let totalLoanCr = 0, totalLoanDr = 0;
+      let totalEduCr = 0, totalEduDr = 0;
+      let totalSpecialCr = 0, totalSpecialDr = 0;
 
-      const scheduleWithBalances = (records || []).map(r => {
-        // Cr increases savings/repayments; Dr decreases or increases loans
+      (records || []).forEach(r => {
+        totalThriftCr += parseFloat(r.thrift_savings || 0);
+        totalThriftDr += parseFloat(r.thrift_withdrawal || 0);
+        totalSharesCr += parseFloat(r.share_capital || 0);
+        totalSharesDr += parseFloat(r.shares_withdrawal || 0);
+        totalLoanCr += parseFloat(r.loan_repayment || 0);
+        totalLoanDr += parseFloat(r.loan_disbursed || 0);
+        totalEduCr += parseFloat(r.edu_loan_repayment || 0);
+        totalEduDr += parseFloat(r.edu_loan_disbursed || 0);
+        totalSpecialCr += parseFloat(r.special_deposit || 0);
+        totalSpecialDr += parseFloat(r.special_withdrawal || 0);
+      });
+
+      // 4. Back-calculate Opening Balances as at Jan 1st
+      let runningThrift = parseFloat(member?.thrift_savings || 0) - (totalThriftCr - totalThriftDr);
+      let runningShares = parseFloat(member?.share_capital || 0) - (totalSharesCr - totalSharesDr);
+      let runningLoan = parseFloat(member?.loan_balance || 0) + (totalLoanCr - totalLoanDr);
+      let runningEduLoan = parseFloat(member?.edu_loan_balance || 0) + (totalEduCr - totalEduDr);
+      let runningSpecial = parseFloat(member?.special_deposit || 0) - (totalSpecialCr - totalSpecialDr);
+
+      // 5. Initialize Social Dues: ₦6,000 debt charged in January
+      let runningSocialDues = 6000;
+
+      const scheduleWithBalances = (records || []).map((r, index) => {
         const thriftCr = parseFloat(r.thrift_savings || 0);
         const thriftDr = parseFloat(r.thrift_withdrawal || 0);
         runningThrift += (thriftCr - thriftDr);
@@ -253,31 +277,24 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
         const specialDr = parseFloat(r.special_withdrawal || 0);
         runningSpecial += (specialCr - specialDr);
 
+        // Social Dues Math: ₦6,000 Dr on 1st row, ₦500 Cr monthly repayment
+        const duesCr = parseFloat(r.social_dues || 0);
+        const duesDr = (index === 0) ? 6000 : 0;
+        runningSocialDues -= duesCr;
+
         return {
           ...r,
-          thrift_dr: thriftDr,
-          thrift_cr: thriftCr,
-          thrift_bal: runningThrift,
-
-          shares_dr: sharesDr,
-          shares_cr: sharesCr,
-          shares_bal: runningShares,
-
-          loan_dr: loanDr,
-          loan_cr: loanCr,
-          loan_bal: runningLoan,
-
-          edu_loan_dr: eduDr,
-          edu_loan_cr: eduCr,
-          edu_loan_bal: runningEduLoan,
-
-          special_dr: specialDr,
-          special_cr: specialCr,
-          special_bal: runningSpecial
+          thrift_dr: thriftDr, thrift_cr: thriftCr, thrift_bal: runningThrift,
+          shares_dr: sharesDr, shares_cr: sharesCr, shares_bal: runningShares,
+          loan_dr: loanDr, loan_cr: loanCr, loan_bal: runningLoan,
+          edu_loan_dr: eduDr, edu_loan_cr: eduCr, edu_loan_bal: runningEduLoan,
+          special_dr: specialDr, special_cr: specialCr, special_bal: runningSpecial,
+          dues_dr: duesDr, dues_cr: duesCr, dues_bal: runningSocialDues
         };
       });
 
       res.json(scheduleWithBalances);
+
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch schedule.' });
   }
