@@ -722,7 +722,7 @@
       }
     }
 
-        async function fetchMonthlySchedule(targetMemberNo = null) {
+    async function fetchMonthlySchedule(targetMemberNo = null) {
       const tbody = document.getElementById('schedule-table-body');
       const tfoot = document.getElementById('schedule-table-foot');
 
@@ -739,14 +739,16 @@
         const token = localStorage.getItem('coop_token') || authToken;
 
         const res = await fetch(url, {
+          method: 'GET',
           headers: {
-            'Authorization': 'Bearer ' + token
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
           }
         });
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `Server returned status ${res.status}`);
+          throw new Error(errData.error || `Server Status ${res.status}: ${res.statusText}`);
         }
 
         const records = await res.json();
@@ -756,7 +758,7 @@
             tbody.innerHTML = `
               <tr>
                 <td colspan="20" class="p-4 text-center text-slate-400 italic">
-                  No monthly postings recorded yet ${targetMemberNo ? 'for ' + targetMemberNo : ''}.
+                  No monthly postings or 2025 balances recorded yet ${targetMemberNo ? 'for ' + targetMemberNo : ''}.
                 </td>
               </tr>`;
           }
@@ -776,9 +778,13 @@
             totals.edu += Number(r.edu_loan_repayment || 0);
             totals.special += Number(r.special_deposit || 0);
 
+            const displayDate = r.payment_date 
+              ? new Date(r.payment_date).toLocaleDateString('en-GB') 
+              : (r.month_year || r.period || '2025 BAL B/F');
+
             return `
               <tr class="hover:bg-slate-50">
-                <td class="p-2.5 font-bold text-slate-700 border-r">${r.payment_date ? new Date(r.payment_date).toLocaleDateString('en-GB') : (r.month_year || '-')}</td>
+                <td class="p-2.5 font-bold text-slate-700 border-r">${displayDate}</td>
 
                 <!-- Thrift Savings -->
                 <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.thrift_dr || 0).toLocaleString()}</td>
@@ -832,7 +838,7 @@
         }
       }
     }
-            
+               
     async function fetchExecutiveSummary() {
       const month = document.getElementById('summary-month-filter').value;
       const container = document.getElementById('executive-summary-grid');
