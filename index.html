@@ -732,8 +732,10 @@
 
       try {
         let url = `${API_BASE}/api/member/monthly-schedule`;
-        if (targetMemberNo) {
-          url += `?member_no=${encodeURIComponent(targetMemberNo)}`;
+        
+        // Only append query parameter if Secretary/Admin explicitly targets another member
+        if (targetMemberNo && targetMemberNo.trim() !== '') {
+          url += `?member_no=${encodeURIComponent(targetMemberNo.trim())}`;
         }
 
         const token = localStorage.getItem('coop_token') || authToken;
@@ -838,8 +840,8 @@
         }
       }
     }
-               
-    async function fetchExecutiveSummary() {
+  
+       async function fetchExecutiveSummary() {
       const month = document.getElementById('summary-month-filter').value;
       const container = document.getElementById('executive-summary-grid');
       container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Generating summary...</p>`;
