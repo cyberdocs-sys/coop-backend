@@ -317,7 +317,16 @@
         </div>
         <button onclick="showScreen('dashboard-view')" class="text-xs text-emerald-700 font-semibold">Back</button>
       </div>
-
+      
+      <!-- SECRETARY MEMBER LOOKUP BAR -->
+      <div id="secretary-schedule-picker" class="hidden bg-slate-800 text-white p-3 rounded-xl space-y-2 shadow-sm">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Secretary Mode: Member Schedule Search</label>
+        <div class="flex gap-2">
+          <input type="text" id="schedule-member-input" placeholder="Enter Member No (e.g. DTMPCS-0008)" class="flex-1 p-2 border text-xs text-slate-900 rounded-lg outline-none font-medium">
+          <button onclick="fetchMonthlySchedule(document.getElementById('schedule-member-input').value.trim())" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow">Load</button>
+        </div>
+      </div>
+      
       <div class="overflow-x-auto border rounded-xl shadow-sm bg-white">
         <table class="w-full text-left text-[11px] border-collapse min-w-[600px]">
       <thead class="bg-slate-100 text-slate-700 text-xs uppercase font-bold sticky top-0 border-b">
@@ -525,14 +534,24 @@
       }
     }
 
-    function showScreen(screenId) {
+        function showScreen(screenId) {
       ['login-view', 'activate-view', 'reset-view', 'dashboard-view', 'schedule-view', 'executive-summary-view', 'ledger-search-view', 'financial-statements-view', 'post-remittance-view'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
       });
       document.getElementById(screenId).classList.remove('hidden');
 
-      if (screenId === 'schedule-view') fetchMonthlySchedule();
+      if (screenId === 'schedule-view') {
+        const picker = document.getElementById('secretary-schedule-picker');
+        if (picker) {
+          if (currentUser && (currentUser.is_admin || currentUser.role === 'ADMIN' || currentUser.role === 'SECRETARY')) {
+            picker.classList.remove('hidden');
+          } else {
+            picker.classList.add('hidden');
+          }
+        }
+        fetchMonthlySchedule();
+      }
       if (screenId === 'executive-summary-view') fetchExecutiveSummary();
       if (screenId === 'ledger-search-view') searchMemberLedger();
       if (screenId === 'financial-statements-view') fetchFinancialStatements();
@@ -703,7 +722,14 @@
       }
     }
 
-    async function fetchMonthlySchedule(targetMemberNo = null) {
+        async function fetchMonthlySchedule(targetMemberNo = null) {
+      const tbody = document.getElementById('schedule-table-body');
+      const tfoot = document.getElementById('schedule-table-foot');
+
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="20" class="p-4 text-center text-slate-500 italic">Loading 12-month schedule...</td></tr>';
+      }
+
       try {
         let url = `${API_BASE}/api/member/monthly-schedule`;
         if (targetMemberNo) {
@@ -718,18 +744,19 @@
           }
         });
 
-        if (!res.ok) throw new Error('Failed to fetch schedule');
-        const records = await res.json();
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Server returned status ${res.status}`);
+        }
 
-        const tbody = document.getElementById('schedule-table-body');
-        const tfoot = document.getElementById('schedule-table-foot');
+        const records = await res.json();
 
         if (!records || records.length === 0) {
           if (tbody) {
             tbody.innerHTML = `
               <tr>
                 <td colspan="20" class="p-4 text-center text-slate-400 italic">
-                  No monthly postings recorded yet.
+                  No monthly postings recorded yet ${targetMemberNo ? 'for ' + targetMemberNo : ''}.
                 </td>
               </tr>`;
           }
@@ -800,9 +827,12 @@
         }
       } catch (err) {
         console.error('Fetch schedule error:', err);
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="20" class="p-4 text-center text-rose-600 font-bold text-xs">Error loading schedule: ${err.message}</td></tr>`;
+        }
       }
     }
-
+            
     async function fetchExecutiveSummary() {
       const month = document.getElementById('summary-month-filter').value;
       const container = document.getElementById('executive-summary-grid');
@@ -856,7 +886,7 @@
       }
     }
 
-    async function searchMemberLedger() {
+        async function searchMemberLedger() {
       const query = (document.getElementById('member-search-input').value || '').trim();
       const container = document.getElementById('ledger-results');
 
@@ -881,6 +911,9 @@
                 <div>Normal Loan: <b>₦${Number(m.loan_balance || 0).toLocaleString()}</b></div>
                 <div>Edu Loan: <b>₦${Number(m.edu_loan_balance || 0).toLocaleString()}</b></div>
               </div>
+              <button onclick="viewMemberSchedule('${m.member_no || m.acc_no}')" class="mt-2 w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-1.5 rounded-lg text-[11px] flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-table-cells text-emerald-400"></i> View Member Schedule
+              </button>
             </div>
           `).join('');
         } else {
@@ -889,6 +922,13 @@
       } catch (err) {
         container.innerHTML = `<p class="text-xs text-red-500 text-center py-4">Search error.</p>`;
       }
+    }
+
+    function viewMemberSchedule(memberNo) {
+      showScreen('schedule-view');
+      const input = document.getElementById('schedule-member-input');
+      if (input) input.value = memberNo;
+      fetchMonthlySchedule(memberNo);
     }
 
     function switchStatementTab(tabKey) {
