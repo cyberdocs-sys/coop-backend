@@ -328,6 +328,7 @@
     <th colspan="3" class="p-2 border-r text-center bg-amber-50 text-amber-900">Normal Loan</th>
     <th colspan="3" class="p-2 border-r text-center bg-rose-50 text-rose-900">Edu Loan</th>
     <th colspan="3" class="p-2 border-r text-center bg-purple-50 text-purple-900">Special Deposit</th>
+    <th colspan="3" class="p-2 border-r text-center bg-indigo-50 text-indigo-900">Social Dues</th>
     <th rowspan="2" class="p-2 text-right">Total Paid</th>
   </tr>
   <tr class="text-[10px] bg-slate-50">
@@ -340,6 +341,8 @@
     <!-- Edu Loan -->
     <th class="p-1 border-r text-right">Dr</th><th class="p-1 border-r text-right">Cr</th><th class="p-1 border-r text-right font-extrabold">Bal</th>
     <!-- Special Deposit -->
+    <th class="p-1 border-r text-right">Dr</th><th class="p-1 border-r text-right">Cr</th><th class="p-1 border-r text-right font-extrabold">Bal</th>
+    <!-- Social Dues -->
     <th class="p-1 border-r text-right">Dr</th><th class="p-1 border-r text-right">Cr</th><th class="p-1 border-r text-right font-extrabold">Bal</th>
   </tr>
 </thead>
@@ -754,15 +757,20 @@
       <td class="p-1.5 text-right text-purple-700 border-r">₦${Number(r.special_cr || 0).toLocaleString()}</td>
       <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-purple-50/30">₦${Number(r.special_bal || 0).toLocaleString()}</td>
 
+            <!-- Social Dues -->
+      <td class="p-1.5 text-right text-indigo-700 border-r">₦${Number(r.dues_dr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right text-slate-500 border-r">₦${Number(r.dues_cr || 0).toLocaleString()}</td>
+      <td class="p-1.5 text-right font-bold text-slate-800 border-r bg-indigo-50/30">₦${Number(r.dues_bal || 0).toLocaleString()}</td>
+
       <!-- Total Paid -->
       <td class="p-2 text-right font-bold text-emerald-800">₦${Number(r.total_amount || 0).toLocaleString()}</td>
     </tr>
   `;
-          }).join('');
+}).join('');
 
           tfoot.innerHTML = `
             <tr class="bg-slate-100 font-bold text-xs border-t-2 border-slate-300">
-              <td colspan="16" class="p-2.5 text-left uppercase text-slate-700">YTD TOTAL PAID IN:</td>
+              <td colspan="19" class="p-2.5 text-left uppercase text-slate-700">YTD TOTAL PAID IN:</td>
               <td class="p-2.5 text-right text-emerald-800 text-sm font-extrabold">₦${totals.total.toLocaleString()}</td>
             </tr>
           `;
