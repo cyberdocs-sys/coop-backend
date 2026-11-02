@@ -6,7 +6,7 @@
   <title>Dynamic Teachers' MPCS LTD</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
+  <style>
   /* Global Loading Overlay */
   #global-loader {
     position: fixed;
@@ -32,6 +32,22 @@
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
+    /* Print & PDF Landscape Optimization */
+    @media print {
+      @page { size: landscape; margin: 10mm; }
+      body { background-color: white !important; -webkit-print-color-adjust: exact; }
+      
+      /* Hide web UI elements */
+      nav, button, .no-print { display: none !important; }
+      
+      /* Force table container to expand and fit page */
+      .overflow-x-auto { overflow: visible !important; }
+      table { width: 100% !important; min-width: 100% !important; font-size: 10px !important; }
+      th, td { padding: 4px !important; border: 1px solid #e2e8f0 !important; }
+      
+      /* Show the hidden print header */
+      .print-header { display: block !important; }
+    }
   .hidden-loader {
     display: none !important;
   }
@@ -315,7 +331,12 @@
           <h3 class="font-bold text-slate-800 text-sm">Monthly Deduction Schedule</h3>
           <p class="text-[10px] text-slate-500">Breakdown of monthly remittances & deductions</p>
         </div>
-        <button onclick="showScreen('dashboard-view')" class="text-xs text-emerald-700 font-semibold">Back</button>
+            <div class="print-header hidden text-center mb-6 pb-2 border-b-2 border-emerald-700">
+      <h2 class="text-2xl font-extrabold text-emerald-800 uppercase">Dynamic Teachers' MPCS LTD</h2>
+      <p class="text-lg text-slate-700 font-bold mt-1">12-Month Financial Schedule</p>
+      <p id="print-member-name" class="text-xl text-emerald-600 font-bold mt-1"></p>
+            </div>
+        <button class="text-emerald-700 font-bold no-print" onclick="showScreen('dashboard-view')">Back</button>
       </div>
       
       <!-- SECRETARY MEMBER LOOKUP BAR -->
@@ -758,6 +779,12 @@
         }
 
         const records = await res.json();
+
+      // ADD THESE 4 LINES HERE: Update the print header with the member's name
+        const printNameEl = document.getElementById('print-member-name');
+        if (printNameEl && records.length > 0) {
+          printNameEl.innerText = `${records[0].member_name || ''} (${records[0].member_no || ''})`;
+        }
 
         if (!records || records.length === 0) {
           if (tbody) {
