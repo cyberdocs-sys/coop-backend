@@ -211,10 +211,10 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 
     const targetNo = rawMemberNo.trim();
 
-    // 1. Fetch member's current database snapshot (Current Balances)
+        // 1. Fetch member's current database snapshot (Current Balances)
     const { data: member, error: memErr } = await supabase
       .from('members')
-      .select('thrift_savings, share_capital, loan_balance, edu_loan_balance, special_deposit')
+      .select('full_name, thrift_savings, share_capital, loan_balance, edu_loan_balance, special_deposit')
       .eq('member_no', targetNo)
       .maybeSingle();
 
@@ -226,7 +226,7 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
       .select('*')
       .eq('member_no', targetNo)
       .order('payment_date', { ascending: true });
-
+    
     if (recErr) throw new Error(`Deductions table error: ${recErr.message}`);
 
     // 3. Compute total payments recorded in the schedule
@@ -249,7 +249,7 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
       totalSpecialDr += parseFloat(r.special_withdrawal || 0);
     });
 
-    // 4. Back-calculate Opening Balances as at Jan 1st (2025 BAL B/F)
+        // 4. Back-calculate Opening Balances as at Jan 1st (2025 BAL B/F)
     let openingThrift = parseFloat(member?.thrift_savings || 0) - (totalThriftCr - totalThriftDr);
     let openingShares = parseFloat(member?.share_capital || 0) - (totalSharesCr - totalSharesDr);
     let openingLoan = parseFloat(member?.loan_balance || 0) + (totalLoanCr - totalLoanDr);
@@ -258,6 +258,8 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 
     // Create the static 2025 Brought Forward Row
     const openingRow = {
+      member_name: member?.full_name || 'Member',
+      member_no: targetNo,
       payment_date: null,
       period: '2025 BAL B/F',
       thrift_dr: 0, thrift_cr: 0, thrift_bal: openingThrift,
