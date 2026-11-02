@@ -211,7 +211,7 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 
     const targetNo = rawMemberNo.trim();
 
-    // 1. Fetch member's current database snapshot (2025 Balances)
+    // 1. Fetch member's current database snapshot (Current Balances)
     const { data: member, error: memErr } = await supabase
       .from('members')
       .select('thrift_savings, share_capital, loan_balance, edu_loan_balance, special_deposit')
@@ -220,14 +220,14 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 
     if (memErr) throw new Error(`Members table error: ${memErr.message}`);
 
-    // 2. Fetch 2026 monthly records from the CORRECT table: monthly_remittances
+    // 2. Fetch 2026 monthly records from the correct table: monthly_deductions
     const { data: records, error: recErr } = await supabase
-      .from('monthly_remittances')
+      .from('monthly_deductions')
       .select('*')
       .eq('member_no', targetNo)
       .order('payment_date', { ascending: true });
 
-    if (recErr) throw new Error(`Remittances table error: ${recErr.message}`);
+    if (recErr) throw new Error(`Deductions table error: ${recErr.message}`);
 
     // 3. Compute total payments recorded in the schedule
     let totalThriftCr = 0, totalThriftDr = 0;
@@ -241,25 +241,43 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
       totalThriftDr += parseFloat(r.thrift_withdrawal || 0);
       totalSharesCr += parseFloat(r.share_capital || 0);
       totalSharesDr += parseFloat(r.shares_withdrawal || 0);
-      totalLoanCr += parseFloat(r.normal_loan_repay || r.loan_repayment || 0);
-      totalLoanDr += parseFloat(r.gross_loan_granted || 0);
-      totalEduCr += parseFloat(r.edu_loan_repay || r.edu_loan_repayment || 0);
+      totalLoanCr += parseFloat(r.loan_repayment || 0);
+      totalLoanDr += parseFloat(r.loan_disbursed || 0);
+      totalEduCr += parseFloat(r.edu_loan_repayment || 0);
       totalEduDr += parseFloat(r.edu_loan_disbursed || 0);
       totalSpecialCr += parseFloat(r.special_deposit || 0);
       totalSpecialDr += parseFloat(r.special_withdrawal || 0);
     });
 
-    // 4. Back-calculate Opening Balances as at Jan 1st
-    let runningThrift = parseFloat(member?.thrift_savings || 0) - (totalThriftCr - totalThriftDr);
-    let runningShares = parseFloat(member?.share_capital || 0) - (totalSharesCr - totalSharesDr);
-    let runningLoan = parseFloat(member?.loan_balance || 0) + (totalLoanCr - totalLoanDr);
-    let runningEduLoan = parseFloat(member?.edu_loan_balance || 0) + (totalEduCr - totalEduDr);
-    let runningSpecial = parseFloat(member?.special_deposit || 0) - (totalSpecialCr - totalSpecialDr);
+    // 4. Back-calculate Opening Balances as at Jan 1st (2025 BAL B/F)
+    let openingThrift = parseFloat(member?.thrift_savings || 0) - (totalThriftCr - totalThriftDr);
+    let openingShares = parseFloat(member?.share_capital || 0) - (totalSharesCr - totalSharesDr);
+    let openingLoan = parseFloat(member?.loan_balance || 0) + (totalLoanCr - totalLoanDr);
+    let openingEduLoan = parseFloat(member?.edu_loan_balance || 0) + (totalEduCr - totalEduDr);
+    let openingSpecial = parseFloat(member?.special_deposit || 0) - (totalSpecialCr - totalSpecialDr);
 
-    // 5. Initialize Social Dues Math
+    // Create the static 2025 Brought Forward Row
+    const openingRow = {
+      payment_date: null,
+      period: '2025 BAL B/F',
+      thrift_dr: 0, thrift_cr: 0, thrift_bal: openingThrift,
+      shares_dr: 0, shares_cr: 0, shares_bal: openingShares,
+      loan_dr: 0, loan_cr: 0, loan_bal: openingLoan,
+      edu_loan_dr: 0, edu_loan_cr: 0, edu_loan_bal: openingEduLoan,
+      special_dr: 0, special_cr: 0, special_bal: openingSpecial,
+      dues_dr: 6000, dues_cr: 0, dues_bal: 6000,
+      total_amount: 0
+    };
+
+    // 5. Track Running Balances for 2026 Rows
+    let runningThrift = openingThrift;
+    let runningShares = openingShares;
+    let runningLoan = openingLoan;
+    let runningEduLoan = openingEduLoan;
+    let runningSpecial = openingSpecial;
     let runningSocialDues = 6000;
 
-    const scheduleWithBalances = (records || []).map((r, index) => {
+    const mappedRecords = (records || []).map((r, index) => {
       const thriftCr = parseFloat(r.thrift_savings || 0);
       const thriftDr = parseFloat(r.thrift_withdrawal || 0);
       runningThrift += (thriftCr - thriftDr);
@@ -268,11 +286,11 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
       const sharesDr = parseFloat(r.shares_withdrawal || 0);
       runningShares += (sharesCr - sharesDr);
 
-      const loanCr = parseFloat(r.normal_loan_repay || r.loan_repayment || 0);
-      const loanDr = parseFloat(r.gross_loan_granted || 0);
+      const loanCr = parseFloat(r.loan_repayment || 0);
+      const loanDr = parseFloat(r.loan_disbursed || 0);
       runningLoan += (loanDr - loanCr);
 
-      const eduCr = parseFloat(r.edu_loan_repay || r.edu_loan_repayment || 0);
+      const eduCr = parseFloat(r.edu_loan_repayment || 0);
       const eduDr = parseFloat(r.edu_loan_disbursed || 0);
       runningEduLoan += (eduDr - eduCr);
 
@@ -281,17 +299,15 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
       runningSpecial += (specialCr - specialDr);
 
       const duesCr = parseFloat(r.social_dues || 0);
-      const duesDr = (index === 0) ? 6000 : 0;
+      const duesDr = 0; // Debt already established in opening row
       runningSocialDues -= duesCr;
 
       // Recreate missing total_amount column on the fly for the frontend math
-      const rowTotal = thriftCr + sharesCr + loanCr + eduCr + specialCr + duesCr + parseFloat(r.cap_mobilization || 0);
+      const rowTotal = thriftCr + sharesCr + loanCr + eduCr + specialCr + duesCr + parseFloat(r.cap_mob || 0);
 
       return {
         ...r,
         total_amount: rowTotal,
-        loan_repayment: loanCr,         
-        edu_loan_repayment: eduCr,      
         thrift_dr: thriftDr, thrift_cr: thriftCr, thrift_bal: runningThrift,
         shares_dr: sharesDr, shares_cr: sharesCr, shares_bal: runningShares,
         loan_dr: loanDr, loan_cr: loanCr, loan_bal: runningLoan,
@@ -301,11 +317,11 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
       };
     });
 
-    res.json(scheduleWithBalances);
+    // Send the B/F row followed by all mapped 2026 rows
+    res.json([openingRow, ...mappedRecords]);
 
   } catch (err) {
     console.error('Schedule Error:', err);
-    // Return the specific actual error so it is no longer masked
     res.status(500).json({ error: err.message || 'Database fetch failed.' });
   }
 });
