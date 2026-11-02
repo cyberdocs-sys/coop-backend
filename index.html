@@ -594,7 +594,7 @@
       document.getElementById('post-total-val').innerText = `₦${tot.toLocaleString()}`;
     }
 
-    async function handlePostRemittance(e) {
+        async function handlePostRemittance(e) {
       e.preventDefault();
       const payload = {
         member_no: document.getElementById('post-member-no').value.trim(),
@@ -619,18 +619,31 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
+        // 1. Read response as raw text first to avoid JSON parse crashes
+        const rawText = await res.text();
+        let data = {};
+        try {
+          data = JSON.parse(rawText);
+        } catch (jsonErr) {
+          // Server returned HTML (e.g. 404, 500, or 401 error page)
+        }
+
+        // 2. Check HTTP status
         if (res.ok) {
           alert('Remittance posted and balances updated!');
           document.getElementById('post-member-no').value = '';
-          ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob'].forEach(id => document.getElementById(id).value = '');
+          ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+          });
           calcTotal();
           showScreen('dashboard-view');
         } else {
-          alert(data.error || 'Failed to post remittance.');
+          // Display exact server response or status code
+          alert(data.error || `Server returned Status ${res.status}: ${rawText.slice(0, 100)}`);
         }
       } catch (err) {
-        alert('Server connection error.');
+        alert('Network Connection Error: ' + err.message);
       }
     }
 
