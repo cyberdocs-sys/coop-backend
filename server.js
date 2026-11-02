@@ -211,93 +211,102 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 
     const targetNo = rawMemberNo.trim();
 
-    // 1. Fetch member's current database snapshot
-    const { data: member } = await supabase
+    // 1. Fetch member's current database snapshot (2025 Balances)
+    const { data: member, error: memErr } = await supabase
       .from('members')
       .select('thrift_savings, share_capital, loan_balance, edu_loan_balance, special_deposit')
       .eq('member_no', targetNo)
       .maybeSingle();
 
-    // 2. Fetch monthly records sorted chronologically
-    const { data: records, error } = await supabase
-      .from('monthly_deductions')
+    if (memErr) throw new Error(`Members table error: ${memErr.message}`);
+
+    // 2. Fetch 2026 monthly records from the CORRECT table: monthly_remittances
+    const { data: records, error: recErr } = await supabase
+      .from('monthly_remittances')
       .select('*')
       .eq('member_no', targetNo)
       .order('payment_date', { ascending: true });
 
-    if (error) throw error;
+    if (recErr) throw new Error(`Remittances table error: ${recErr.message}`);
 
-      // 3. Compute total payments recorded in the schedule
-      let totalThriftCr = 0, totalThriftDr = 0;
-      let totalSharesCr = 0, totalSharesDr = 0;
-      let totalLoanCr = 0, totalLoanDr = 0;
-      let totalEduCr = 0, totalEduDr = 0;
-      let totalSpecialCr = 0, totalSpecialDr = 0;
+    // 3. Compute total payments recorded in the schedule
+    let totalThriftCr = 0, totalThriftDr = 0;
+    let totalSharesCr = 0, totalSharesDr = 0;
+    let totalLoanCr = 0, totalLoanDr = 0;
+    let totalEduCr = 0, totalEduDr = 0;
+    let totalSpecialCr = 0, totalSpecialDr = 0;
 
-      (records || []).forEach(r => {
-        totalThriftCr += parseFloat(r.thrift_savings || 0);
-        totalThriftDr += parseFloat(r.thrift_withdrawal || 0);
-        totalSharesCr += parseFloat(r.share_capital || 0);
-        totalSharesDr += parseFloat(r.shares_withdrawal || 0);
-        totalLoanCr += parseFloat(r.loan_repayment || 0);
-        totalLoanDr += parseFloat(r.loan_disbursed || 0);
-        totalEduCr += parseFloat(r.edu_loan_repayment || 0);
-        totalEduDr += parseFloat(r.edu_loan_disbursed || 0);
-        totalSpecialCr += parseFloat(r.special_deposit || 0);
-        totalSpecialDr += parseFloat(r.special_withdrawal || 0);
-      });
+    (records || []).forEach(r => {
+      totalThriftCr += parseFloat(r.thrift_savings || 0);
+      totalThriftDr += parseFloat(r.thrift_withdrawal || 0);
+      totalSharesCr += parseFloat(r.share_capital || 0);
+      totalSharesDr += parseFloat(r.shares_withdrawal || 0);
+      totalLoanCr += parseFloat(r.normal_loan_repay || r.loan_repayment || 0);
+      totalLoanDr += parseFloat(r.gross_loan_granted || 0);
+      totalEduCr += parseFloat(r.edu_loan_repay || r.edu_loan_repayment || 0);
+      totalEduDr += parseFloat(r.edu_loan_disbursed || 0);
+      totalSpecialCr += parseFloat(r.special_deposit || 0);
+      totalSpecialDr += parseFloat(r.special_withdrawal || 0);
+    });
 
-      // 4. Back-calculate Opening Balances as at Jan 1st
-      let runningThrift = parseFloat(member?.thrift_savings || 0) - (totalThriftCr - totalThriftDr);
-      let runningShares = parseFloat(member?.share_capital || 0) - (totalSharesCr - totalSharesDr);
-      let runningLoan = parseFloat(member?.loan_balance || 0) + (totalLoanCr - totalLoanDr);
-      let runningEduLoan = parseFloat(member?.edu_loan_balance || 0) + (totalEduCr - totalEduDr);
-      let runningSpecial = parseFloat(member?.special_deposit || 0) - (totalSpecialCr - totalSpecialDr);
+    // 4. Back-calculate Opening Balances as at Jan 1st
+    let runningThrift = parseFloat(member?.thrift_savings || 0) - (totalThriftCr - totalThriftDr);
+    let runningShares = parseFloat(member?.share_capital || 0) - (totalSharesCr - totalSharesDr);
+    let runningLoan = parseFloat(member?.loan_balance || 0) + (totalLoanCr - totalLoanDr);
+    let runningEduLoan = parseFloat(member?.edu_loan_balance || 0) + (totalEduCr - totalEduDr);
+    let runningSpecial = parseFloat(member?.special_deposit || 0) - (totalSpecialCr - totalSpecialDr);
 
-      // 5. Initialize Social Dues: ₦6,000 debt charged in January
-      let runningSocialDues = 6000;
+    // 5. Initialize Social Dues Math
+    let runningSocialDues = 6000;
 
-      const scheduleWithBalances = (records || []).map((r, index) => {
-        const thriftCr = parseFloat(r.thrift_savings || 0);
-        const thriftDr = parseFloat(r.thrift_withdrawal || 0);
-        runningThrift += (thriftCr - thriftDr);
+    const scheduleWithBalances = (records || []).map((r, index) => {
+      const thriftCr = parseFloat(r.thrift_savings || 0);
+      const thriftDr = parseFloat(r.thrift_withdrawal || 0);
+      runningThrift += (thriftCr - thriftDr);
 
-        const sharesCr = parseFloat(r.share_capital || 0);
-        const sharesDr = parseFloat(r.shares_withdrawal || 0);
-        runningShares += (sharesCr - sharesDr);
+      const sharesCr = parseFloat(r.share_capital || 0);
+      const sharesDr = parseFloat(r.shares_withdrawal || 0);
+      runningShares += (sharesCr - sharesDr);
 
-        const loanCr = parseFloat(r.loan_repayment || 0);
-        const loanDr = parseFloat(r.loan_disbursed || 0);
-        runningLoan += (loanDr - loanCr);
+      const loanCr = parseFloat(r.normal_loan_repay || r.loan_repayment || 0);
+      const loanDr = parseFloat(r.gross_loan_granted || 0);
+      runningLoan += (loanDr - loanCr);
 
-        const eduCr = parseFloat(r.edu_loan_repayment || 0);
-        const eduDr = parseFloat(r.edu_loan_disbursed || 0);
-        runningEduLoan += (eduDr - eduCr);
+      const eduCr = parseFloat(r.edu_loan_repay || r.edu_loan_repayment || 0);
+      const eduDr = parseFloat(r.edu_loan_disbursed || 0);
+      runningEduLoan += (eduDr - eduCr);
 
-        const specialCr = parseFloat(r.special_deposit || 0);
-        const specialDr = parseFloat(r.special_withdrawal || 0);
-        runningSpecial += (specialCr - specialDr);
+      const specialCr = parseFloat(r.special_deposit || 0);
+      const specialDr = parseFloat(r.special_withdrawal || 0);
+      runningSpecial += (specialCr - specialDr);
 
-        // Social Dues Math: ₦6,000 Dr on 1st row, ₦500 Cr monthly repayment
-        const duesCr = parseFloat(r.social_dues || 0);
-        const duesDr = (index === 0) ? 6000 : 0;
-        runningSocialDues -= duesCr;
+      const duesCr = parseFloat(r.social_dues || 0);
+      const duesDr = (index === 0) ? 6000 : 0;
+      runningSocialDues -= duesCr;
 
-        return {
-          ...r,
-          thrift_dr: thriftDr, thrift_cr: thriftCr, thrift_bal: runningThrift,
-          shares_dr: sharesDr, shares_cr: sharesCr, shares_bal: runningShares,
-          loan_dr: loanDr, loan_cr: loanCr, loan_bal: runningLoan,
-          edu_loan_dr: eduDr, edu_loan_cr: eduCr, edu_loan_bal: runningEduLoan,
-          special_dr: specialDr, special_cr: specialCr, special_bal: runningSpecial,
-          dues_dr: duesDr, dues_cr: duesCr, dues_bal: runningSocialDues
-        };
-      });
+      // Recreate missing total_amount column on the fly for the frontend math
+      const rowTotal = thriftCr + sharesCr + loanCr + eduCr + specialCr + duesCr + parseFloat(r.cap_mobilization || 0);
 
-      res.json(scheduleWithBalances);
+      return {
+        ...r,
+        total_amount: rowTotal,
+        loan_repayment: loanCr,         
+        edu_loan_repayment: eduCr,      
+        thrift_dr: thriftDr, thrift_cr: thriftCr, thrift_bal: runningThrift,
+        shares_dr: sharesDr, shares_cr: sharesCr, shares_bal: runningShares,
+        loan_dr: loanDr, loan_cr: loanCr, loan_bal: runningLoan,
+        edu_loan_dr: eduDr, edu_loan_cr: eduCr, edu_loan_bal: runningEduLoan,
+        special_dr: specialDr, special_cr: specialCr, special_bal: runningSpecial,
+        dues_dr: duesDr, dues_cr: duesCr, dues_bal: runningSocialDues
+      };
+    });
+
+    res.json(scheduleWithBalances);
 
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch schedule.' });
+    console.error('Schedule Error:', err);
+    // Return the specific actual error so it is no longer masked
+    res.status(500).json({ error: err.message || 'Database fetch failed.' });
   }
 });
 
