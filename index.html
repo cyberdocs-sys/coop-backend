@@ -322,17 +322,9 @@
 <div>
   <label class="block text-[11px] font-bold text-slate-500 mb-1">Edu Loan Interest (₦)</label>
   <input type="number" id="post-edu-interest" oninput="calcTotal()" class="w-full p-2.5 bg-slate-50 border rounded-lg text-sm" placeholder="0" min="0">
+ </div>
 </div>
-        </div>
-        <div>
-  <label class="block text-[11px] font-bold text-slate-500 mb-1">Normal Loan Interest (₦)</label>
-  <input type="number" id="post-loan-interest" oninput="calcTotal()" class="w-full p-2.5 bg-slate-50 border rounded-lg text-sm" placeholder="0" min="0">
-</div>
-<div>
-  <label class="block text-[11px] font-bold text-slate-500 mb-1">Edu Loan Interest (₦)</label>
-  <input type="number" id="post-edu-interest" oninput="calcTotal()" class="w-full p-2.5 bg-slate-50 border rounded-lg text-sm" placeholder="0" min="0">
-</div>
-        
+              
         <div class="bg-emerald-50 p-2.5 rounded-lg flex justify-between items-center font-bold text-xs text-emerald-900 border border-emerald-200">
           <span>Total Monthly Deduction:</span>
           <span id="post-total-val" class="text-sm font-extrabold text-emerald-800">₦0.00</span>
@@ -657,7 +649,8 @@
         if (res.ok) {
           alert('Remittance posted and balances updated!');
           document.getElementById('post-member-no').value = '';
-          ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob', 'post-loan-interest', 'post-edu-interest']            const el = document.getElementById(id);
+          ['post-thrift', 'post-shares', 'post-dues', 'post-loan', 'post-eduloan', 'post-special', 'post-capmob', 'post-loan-interest', 'post-edu-interest'].forEach(id => {
+            const el = document.getElementById(id);
             if (el) el.value = '';
           });
           calcTotal();
