@@ -332,7 +332,7 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 // 3. ADMIN / SECRETARY PROTECTED ROUTES
 // ==========================================
 
-// Post Monthly Remittance (Dual-Table Posting & Balance Updates)
+// Post Monthly Remittance (Includes Penal Interest Deduction)
 app.post('/api/admin/post-monthly-deduction', authenticateToken, requireRoles('ADMIN', 'SECRETARY'), async (req, res) => {
   const { 
     member_no, 
@@ -362,9 +362,14 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, requireRoles('A
     const eduRepay = Math.max(0, Number(edu_loan_repayment || 0));
     const special = Math.max(0, Number(special_deposit || 0));
     const mob = Math.max(0, Number(cap_mob || 0));
-    const total = thrift + shares + dues + loanRepay + eduRepay + special + mob;
+    
+    // Process Penal Interests
+    const lInterest = Math.max(0, Number(loan_interest || 0));
+    const eInterest = Math.max(0, Number(edu_interest || 0));
+    
+    const total = thrift + shares + dues + loanRepay + eduRepay + special + mob + lInterest + eInterest;
 
-    // 1. Insert into monthly_deductions
+    // 1. Insert into monthly_deductions (This prints on the member's schedule)
     const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
       member_no: cleanMemberNo,
       month_year: month_year || 'JAN 2026',
@@ -376,11 +381,13 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, requireRoles('A
       edu_loan_repayment: eduRepay,
       special_deposit: special,
       cap_mob: mob,
+      loan_interest: lInterest, // Added
+      edu_interest: eInterest,  // Added
       total_amount: total
     }]);
     if (dedErr) throw dedErr;
 
-    // 2. Insert into monthly_remittances
+    // 2. Insert into monthly_remittances (This updates the Society's Income Ledgers)
     const { error: remErr } = await supabase.from('monthly_remittances').insert([{
       member_no: cleanMemberNo,
       payment_date,
@@ -391,8 +398,8 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, requireRoles('A
       special_deposit: special,
       normal_loan_repay: loanRepay,
       edu_loan_repay: eduRepay,
-      loan_interest: Math.max(0, Number(loan_interest || 0)),
-      edu_interest: Math.max(0, Number(edu_interest || 0))
+      loan_interest: lInterest,
+      edu_interest: eInterest
     }]);
     if (remErr) throw remErr;
 
@@ -405,7 +412,9 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, requireRoles('A
 
     if (memErr || !member) return res.status(404).json({ error: 'Member record not found.' });
 
-    const newThrift = Number(member.thrift_savings || 0) + thrift;
+    // ✅ Crucial Math: Penal interest is explicitly deducted from their overall Thrift Savings here
+    const newThrift = Number(member.thrift_savings || 0) + thrift - lInterest - eInterest;
+    
     const newShares = Number(member.share_capital || 0) + shares;
     const newSpecial = Number(member.special_deposit || 0) + special;
     const newCapMob = Number(member.cap_mob || 0) + mob;
@@ -432,7 +441,8 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, requireRoles('A
   }
 });
 
-// Grant Loan to Member (With Balanced Double-Entry Journal Records)
+
+// Grant Loan to Member (With Upfront Interest Deduction & Triple-Entry Journal)
 app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECRETARY'), async (req, res) => {
   const { member_no, loan_type, principal_amount, disbursement_date } = req.body;
   const amount = Number(principal_amount);
@@ -446,6 +456,11 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
     const isEdu = loan_type.toUpperCase() === 'EDU';
     const field = isEdu ? 'edu_loan_balance' : 'loan_balance';
 
+    // ✅ Upfront Interest Calculation (10% Normal, 5% Edu)
+    const interestRate = isEdu ? 0.05 : 0.10; 
+    const upfrontInterest = amount * interestRate;
+    const cashDisbursed = amount - upfrontInterest;
+
     const { data: member, error: memErr } = await supabase
       .from('members')
       .select('member_no, full_name, loan_balance, edu_loan_balance')
@@ -456,6 +471,7 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
       return res.status(404).json({ error: `Member account '${cleanNo}' not found.` });
     }
 
+    // 1. Update Member's Loan Balance (Gross Amount)
     const currentBalance = Number(member[field] || 0);
     const { error: updErr } = await supabase
       .from('members')
@@ -464,7 +480,21 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
 
     if (updErr) throw updErr;
 
-    // Double-Entry Record: Asset Debit (Loan Portfolio), Asset Credit (Bank Account)
+    // 2. Save Upfront Interest to monthly_deductions so it prints on their 12-month schedule
+    const dDate = new Date(disbursement_date);
+    const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const monthYear = `${monthNames[dDate.getMonth()]} ${dDate.getFullYear()}`;
+
+    await supabase.from('monthly_deductions').insert([{
+      member_no: cleanNo,
+      month_year: monthYear,
+      payment_date: disbursement_date,
+      loan_interest: isEdu ? 0 : upfrontInterest,
+      edu_interest: isEdu ? upfrontInterest : 0,
+      total_amount: 0 // No monthly cash remitted here, just logging the withheld interest
+    }]);
+
+    // 3. Balanced Journal Entries (Debit Portfolio, Credit Bank, Credit Interest Income)
     const headName = isEdu ? 'EDU LOAN DISBURSED' : 'REGULAR LOAN DISBURSED';
     await supabase.from('journal_entries').insert([
       {
@@ -473,24 +503,32 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
         particulars: `${headName} - ${member.full_name || cleanNo}`,
         debit_amount: amount,
         credit_amount: 0,
-        financial_year: new Date(disbursement_date).getFullYear()
+        financial_year: dDate.getFullYear()
       },
       {
         entry_date: disbursement_date,
         category: 'ASSET',
-        particulars: `BANK DISBURSEMENT - ${cleanNo}`,
+        particulars: `BANK DISBURSEMENT (NET) - ${cleanNo}`,
         debit_amount: 0,
-        credit_amount: amount,
-        financial_year: new Date(disbursement_date).getFullYear()
+        credit_amount: cashDisbursed,
+        financial_year: dDate.getFullYear()
+      },
+      {
+        entry_date: disbursement_date,
+        category: 'INCOME',
+        particulars: `UPFRONT INTEREST (${isEdu ? 'EDU' : 'NORMAL'}) - ${cleanNo}`,
+        debit_amount: 0,
+        credit_amount: upfrontInterest,
+        financial_year: dDate.getFullYear()
       }
     ]);
 
-    res.json({ message: `₦${amount.toLocaleString()} disbursed successfully to ${cleanNo}.` });
+    res.json({ message: `₦${amount.toLocaleString()} disbursed (Net: ₦${cashDisbursed.toLocaleString()}) to ${cleanNo}.` });
   } catch (err) {
     res.status(500).json({ error: 'Failed to process loan disbursement.' });
   }
 });
-
+                                                                                
 // Post Journal Entry
 app.post('/api/admin/post-journal-entry', authenticateToken, requireRoles('ADMIN', 'SECRETARY'), async (req, res) => {
   const { entry_date, account_category, account_head, debit, credit } = req.body;
