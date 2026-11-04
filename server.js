@@ -211,7 +211,7 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 
     const targetNo = rawMemberNo.trim();
 
-        // 1. Fetch member's current database snapshot (Current Balances)
+    // 1. Fetch member's current database snapshot (Current Balances)
     const { data: member, error: memErr } = await supabase
       .from('members')
       .select('full_name, thrift_savings, share_capital, loan_balance, edu_loan_balance, special_deposit')
@@ -238,22 +238,25 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
 
     (records || []).forEach(r => {
       totalThriftCr += parseFloat(r.thrift_savings || 0);
-      totalThriftDr += parseFloat(r.thrift_withdrawal || 0);
+      totalThriftDr += parseFloat(r.thrift_dr || 0);           // ✅ Fixed to match DB
       totalSharesCr += parseFloat(r.share_capital || 0);
-      totalSharesDr += parseFloat(r.shares_withdrawal || 0);
+      totalSharesDr += parseFloat(r.shares_dr || 0);           // ✅ Fixed to match DB
       totalLoanCr += parseFloat(r.loan_repayment || 0);
-      totalLoanDr += parseFloat(r.loan_disbursed || 0);
+      totalLoanDr += parseFloat(r.loan_dr || 0);               // ✅ Fixed to match DB
       totalEduCr += parseFloat(r.edu_loan_repayment || 0);
-      totalEduDr += parseFloat(r.edu_loan_disbursed || 0);
+      totalEduDr += parseFloat(r.edu_loan_dr || 0);            // ✅ Fixed to match DB
       totalSpecialCr += parseFloat(r.special_deposit || 0);
-      totalSpecialDr += parseFloat(r.special_withdrawal || 0);
+      totalSpecialDr += parseFloat(r.special_dr || 0);         // ✅ Fixed to match DB
     });
 
-        // 4. Back-calculate Opening Balances as at Jan 1st (2025 BAL B/F)
+    // 4. Back-calculate Opening Balances as at Jan 1st (2025 BAL B/F)
     let openingThrift = parseFloat(member?.thrift_savings || 0) - (totalThriftCr - totalThriftDr);
     let openingShares = parseFloat(member?.share_capital || 0) - (totalSharesCr - totalSharesDr);
+    
+    // Reverse Math: Opening Bal = Current Bal - Debits (Loans Issued) + Credits (Repayments)
     let openingLoan = parseFloat(member?.loan_balance || 0) + (totalLoanCr - totalLoanDr);
     let openingEduLoan = parseFloat(member?.edu_loan_balance || 0) + (totalEduCr - totalEduDr);
+    
     let openingSpecial = parseFloat(member?.special_deposit || 0) - (totalSpecialCr - totalSpecialDr);
 
     // Create the static 2025 Brought Forward Row
@@ -279,33 +282,33 @@ app.get('/api/member/monthly-schedule', authenticateToken, async (req, res) => {
     let runningSpecial = openingSpecial;
     let runningSocialDues = 6000;
 
-    const mappedRecords = (records || []).map((r, index) => {
+    const mappedRecords = (records || []).map((r) => {
       const thriftCr = parseFloat(r.thrift_savings || 0);
-      const thriftDr = parseFloat(r.thrift_withdrawal || 0);
+      const thriftDr = parseFloat(r.thrift_dr || 0);
       runningThrift += (thriftCr - thriftDr);
 
       const sharesCr = parseFloat(r.share_capital || 0);
-      const sharesDr = parseFloat(r.shares_withdrawal || 0);
+      const sharesDr = parseFloat(r.shares_dr || 0);
       runningShares += (sharesCr - sharesDr);
 
       const loanCr = parseFloat(r.loan_repayment || 0);
-      const loanDr = parseFloat(r.loan_disbursed || 0);
+      const loanDr = parseFloat(r.loan_dr || 0);
       runningLoan += (loanDr - loanCr);
 
       const eduCr = parseFloat(r.edu_loan_repayment || 0);
-      const eduDr = parseFloat(r.edu_loan_disbursed || 0);
+      const eduDr = parseFloat(r.edu_loan_dr || 0);
       runningEduLoan += (eduDr - eduCr);
 
       const specialCr = parseFloat(r.special_deposit || 0);
-      const specialDr = parseFloat(r.special_withdrawal || 0);
+      const specialDr = parseFloat(r.special_dr || 0);
       runningSpecial += (specialCr - specialDr);
 
       const duesCr = parseFloat(r.social_dues || 0);
-      const duesDr = 0; // Debt already established in opening row
+      const duesDr = 0; 
       runningSocialDues -= duesCr;
 
-      // Recreate missing total_amount column on the fly for the frontend math
-      const rowTotal = thriftCr + sharesCr + loanCr + eduCr + specialCr + duesCr + parseFloat(r.cap_mob || 0);
+      // ✅ Uses the exact total_amount saved in the database to prevent upfront interest from skewing cash-remitted totals
+      const rowTotal = parseFloat(r.total_amount || 0);
 
       return {
         ...r,
@@ -485,13 +488,15 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
     const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     const monthYear = `${monthNames[dDate.getMonth()]} ${dDate.getFullYear()}`;
 
-    await supabase.from('monthly_deductions').insert([{
+     await supabase.from('monthly_deductions').insert([{
       member_no: cleanNo,
       month_year: monthYear,
       payment_date: disbursement_date,
+      loan_dr: isEdu ? 0 : amount,         // ✅ Adds Normal Loan Dr (Disbursement)
+      edu_loan_dr: isEdu ? amount : 0,     // ✅ Adds Edu Loan Dr (Disbursement)
       loan_interest: isEdu ? 0 : upfrontInterest,
       edu_interest: isEdu ? upfrontInterest : 0,
-      total_amount: 0 // No monthly cash remitted here, just logging the withheld interest
+      total_amount: 0 
     }]);
 
     // 3. Balanced Journal Entries (Debit Portfolio, Credit Bank, Credit Interest Income)
