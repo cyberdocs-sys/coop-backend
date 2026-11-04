@@ -464,11 +464,12 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
     const upfrontInterest = amount * interestRate;
     const cashDisbursed = amount - upfrontInterest;
 
-    const { data: member, error: memErr } = await supabase
+        const { data: member, error: memErr } = await supabase
       .from('members')
-      .select('member_no, full_name, loan_balance, edu_loan_balance')
+      .select('id, member_no, full_name, loan_balance, edu_loan_balance') // ✅ Added id here
       .eq('member_no', cleanNo)
       .maybeSingle();
+
 
     if (memErr || !member) {
       return res.status(404).json({ error: `Member account '${cleanNo}' not found.` });
@@ -483,23 +484,32 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
 
     if (updErr) throw updErr;
 
-    // 2. Save Upfront Interest to monthly_deductions so it prints on their 12-month schedule
+        // 2. Log the Cashbook Entry for the 12-Month Schedule
     const dDate = new Date(disbursement_date);
     const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     const monthYear = `${monthNames[dDate.getMonth()]} ${dDate.getFullYear()}`;
 
-     await supabase.from('monthly_deductions').insert([{
+    await supabase.from('monthly_deductions').insert([{
       member_no: cleanNo,
       month_year: monthYear,
       payment_date: disbursement_date,
-      loan_dr: isEdu ? 0 : amount,         // ✅ Adds Normal Loan Dr (Disbursement)
-      edu_loan_dr: isEdu ? amount : 0,     // ✅ Adds Edu Loan Dr (Disbursement)
+      loan_dr: isEdu ? 0 : amount,         
+      edu_loan_dr: isEdu ? amount : 0,     
       loan_interest: isEdu ? 0 : upfrontInterest,
       edu_interest: isEdu ? upfrontInterest : 0,
       total_amount: 0 
     }]);
 
-    // 3. Balanced Journal Entries (Debit Portfolio, Credit Bank, Credit Interest Income)
+    // 3. Log the Official Contract in loan_applications
+    await supabase.from('loan_applications').insert([{
+      member_id: member.id,                     
+      amount_requested: amount,
+      tenor_months: isEdu ? 12 : 24,            
+      purpose: isEdu ? 'Educational Loan' : 'Normal Loan',
+      status: 'Approved'                        
+    }]);
+
+    // 4. Balanced Journal Entries (Debit Portfolio, Credit Bank, Credit Interest Income)
     const headName = isEdu ? 'EDU LOAN DISBURSED' : 'REGULAR LOAN DISBURSED';
     await supabase.from('journal_entries').insert([
       {
