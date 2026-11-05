@@ -484,12 +484,12 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
 
     if (updErr) throw updErr;
 
-        // 2. Log the Cashbook Entry for the 12-Month Schedule
+            // 2. Log the Cashbook Entry for the 12-Month Schedule
     const dDate = new Date(disbursement_date);
     const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     const monthYear = `${monthNames[dDate.getMonth()]} ${dDate.getFullYear()}`;
 
-    await supabase.from('monthly_deductions').insert([{
+    const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
       member_no: cleanNo,
       month_year: monthYear,
       payment_date: disbursement_date,
@@ -500,14 +500,22 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
       total_amount: 0 
     }]);
 
+    if (dedErr) {
+      return res.status(500).json({ error: 'Cashbook Insert Failed: ' + dedErr.message });
+    }
+
     // 3. Log the Official Contract in loan_applications
-    await supabase.from('loan_applications').insert([{
+    const { error: appErr } = await supabase.from('loan_applications').insert([{
       member_id: member.id,                     
       amount_requested: amount,
       tenor_months: isEdu ? 12 : 24,            
       purpose: isEdu ? 'Educational Loan' : 'Normal Loan',
       status: 'Approved'                        
     }]);
+
+    if (appErr) {
+      return res.status(500).json({ error: 'Contract Insert Failed: ' + appErr.message });
+    }
 
     // 4. Balanced Journal Entries (Debit Portfolio, Credit Bank, Credit Interest Income)
     const headName = isEdu ? 'EDU LOAN DISBURSED' : 'REGULAR LOAN DISBURSED';
