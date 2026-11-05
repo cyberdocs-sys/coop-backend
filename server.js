@@ -489,7 +489,7 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
     const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     const monthYear = `${monthNames[dDate.getMonth()]} ${dDate.getFullYear()}`;
 
-    const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
+        const { error: dedErr } = await supabase.from('monthly_deductions').insert([{
       member_no: cleanNo,
       month_year: monthYear,
       payment_date: disbursement_date,
@@ -500,6 +500,7 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
       total_amount: 0 
     }]);
 
+    // THIS IS THE CRITICAL PART WE NEED:
     if (dedErr) {
       return res.status(500).json({ error: 'Cashbook Insert Failed: ' + dedErr.message });
     }
