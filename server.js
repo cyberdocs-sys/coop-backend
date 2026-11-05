@@ -825,7 +825,7 @@ app.get('/api/admin/personal-ledger', authenticateToken, requireRoles('ADMIN', '
 });
 
 // POST /api/loans/grant - Grant loan with upfront interest deduction
-app.post('/api/loans/grant', async (req, res) => {
+app.post('/api/admin/grant-loan', async (req, res) => {
   try {
     const { member_id, loan_type, gross_amount, issue_date } = req.body;
 
