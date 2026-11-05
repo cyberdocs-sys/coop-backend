@@ -848,14 +848,17 @@ app.post('/api/admin/grant-loan', async (req, res) => {
     const netDisbursed = gross - upfrontInterest;
 
     // 1. Fetch current member loan balance
-    const { data: member, error: fetchErr } = await supabase
+        const { data: member, error: memErr } = await supabase
       .from('members')
-      .select('member_no, loan_balance, edu_loan_balance')
-      .eq('member_no', member_id.trim())
+      .select('id, member_no, full_name, loan_balance, edu_loan_balance')
+      .eq('member_no', cleanNo)
       .maybeSingle();
 
-    if (fetchErr || !member) {
-      return res.status(404).json({ error: 'Member not found.' });
+    if (memErr) {
+      return res.status(500).json({ error: 'DB Query Error: ' + memErr.message });
+    }
+    if (!member) {
+      return res.status(404).json({ error: `Member account '${cleanNo}' not found in database.` });
     }
 
     // 2. Calculate new loan balance
