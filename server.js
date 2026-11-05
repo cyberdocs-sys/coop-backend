@@ -508,9 +508,9 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
       return res.status(500).json({ error: 'Cashbook Insert Failed: ' + dedErr.message });
     }
 
-    // 3. Log the Official Contract in loan_applications
+     // 3. Log the Official Contract in loan_applications
     const { error: appErr } = await supabase.from('loan_applications').insert([{
-            member_id: member.member_id,                     
+      member_id: member.member_id,                     
       amount_requested: amount,
       tenor_months: isEdu ? 12 : 24,            
       purpose: isEdu ? 'Educational Loan' : 'Normal Loan',
