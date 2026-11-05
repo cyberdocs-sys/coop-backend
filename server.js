@@ -465,13 +465,16 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
     const cashDisbursed = amount - upfrontInterest;
 
             // Make the lookup resilient to column name variations
-    const { data: member, error: memErr } = await supabase
+        const { data: member, error: memErr } = await supabase
       .from('members')
-      .select('id, member_no, full_name, loan_balance, edu_loan_balance')
-      .or(`member_no.eq.${cleanNo},id.eq.${cleanNo}`)
+      .select('member_id, member_no, full_name, loan_balance, edu_loan_balance')
+      .eq('member_no', cleanNo)
       .maybeSingle();
 
-    if (memErr || !member) {
+    if (memErr) {
+      return res.status(500).json({ error: 'DB Fetch Error: ' + memErr.message });
+    }
+    if (!member) {
       return res.status(404).json({ error: `Member account '${cleanNo}' not found.` });
     }
 
@@ -507,7 +510,7 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
 
     // 3. Log the Official Contract in loan_applications
     const { error: appErr } = await supabase.from('loan_applications').insert([{
-      member_id: member.id,                     
+            member_id: member.member_id,                     
       amount_requested: amount,
       tenor_months: isEdu ? 12 : 24,            
       purpose: isEdu ? 'Educational Loan' : 'Normal Loan',
