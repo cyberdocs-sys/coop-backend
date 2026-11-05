@@ -1079,7 +1079,13 @@
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + (localStorage.getItem('coop_token') || '')
           },
-          body: JSON.stringify({ member_id, loan_type, gross_amount, issue_date })
+          // This is the only line that changes. It translates the data for the backend:
+          body: JSON.stringify({ 
+            member_no: member_id, 
+            loan_type: loan_type, 
+            principal_amount: gross_amount, 
+            disbursement_date: issue_date 
+          })
         });
 
         const data = await res.json();
@@ -1094,7 +1100,7 @@
         console.error('Error issuing loan:', err);
         alert('Failed to connect to server.');
       }
-    }    
+    }
   </script>
 
   <!-- GRANT LOAN MODAL CONTAINER -->
