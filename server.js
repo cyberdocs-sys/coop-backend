@@ -464,12 +464,12 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
     const upfrontInterest = amount * interestRate;
     const cashDisbursed = amount - upfrontInterest;
 
-        const { data: member, error: memErr } = await supabase
+            // Make the lookup resilient to column name variations
+    const { data: member, error: memErr } = await supabase
       .from('members')
-      .select('id, member_no, full_name, loan_balance, edu_loan_balance') // ✅ Added id here
-      .eq('member_no', cleanNo)
+      .select('id, member_no, full_name, loan_balance, edu_loan_balance')
+      .or(`member_no.eq.${cleanNo},id.eq.${cleanNo}`)
       .maybeSingle();
-
 
     if (memErr || !member) {
       return res.status(404).json({ error: `Member account '${cleanNo}' not found.` });
