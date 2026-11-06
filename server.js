@@ -523,7 +523,7 @@ app.post('/api/admin/grant-loan', authenticateToken, requireRoles('ADMIN', 'SECR
     const { error: appErr } = await supabase.from('loan_applications').insert([{
       member_id: member.member_id,                     
       amount_requested: amount,
-      tenor_months: isEdu ? 12 : 24,            
+      tenor_months: isEdu ? 6 : 12,            
       purpose: isEdu ? 'Educational Loan' : 'Normal Loan',
       status: 'Approved'                        
     }]);
