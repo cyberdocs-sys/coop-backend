@@ -415,12 +415,23 @@ app.post('/api/admin/post-monthly-deduction', authenticateToken, requireRoles('A
 
     if (memErr || !member) return res.status(404).json({ error: 'Member record not found.' });
 
-    // ✅ Crucial Math: Penal interest is explicitly deducted from their overall Thrift Savings here
-    const newThrift = Number(member.thrift_savings || 0) + thrift - lInterest - eInterest;
-    
-    const newShares = Number(member.share_capital || 0) + shares;
-    const newSpecial = Number(member.special_deposit || 0) + special;
-    const newCapMob = Number(member.cap_mob || 0) + mob;
+        // ✅ Crucial Math: Penal interest cascading deduction
+    let newThrift = Number(member.thrift_savings) + thrift;
+    let newShares = Number(member.share_capital) + shares;
+    const totalPenalty = lInterest + eInterest;
+
+    if (totalPenalty > 0) {
+      if (newThrift >= totalPenalty) {
+        newThrift -= totalPenalty; // Thrift is sufficient to cover penalty
+      } else {
+        const remainder = totalPenalty - newThrift;
+        newThrift = 0; // Thrift is wiped out
+        newShares = Math.max(0, newShares - remainder); // Remainder attacks shares
+      }
+    }
+
+    const newSpecial = Number(member.special_deposit) + special;
+    const newCapMob = Number(member.cap_mob) + mob;
     const newLoanBal = Math.max(0, Number(member.loan_balance || 0) - loanRepay);
     const newEduLoanBal = Math.max(0, Number(member.edu_loan_balance || 0) - eduRepay);
 
