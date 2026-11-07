@@ -605,7 +605,7 @@
       const li = Number(document.getElementById('post-loan-interest').value || 0); 
       const ei = Number(document.getElementById('post-edu-interest').value || 0);
 
-      const tot = t + s + d + l + e + sp + mob + li + ei;
+      const tot = t + s + d + l + e + sp + mob;
       document.getElementById('post-total-val').innerText = `₦${tot.toLocaleString()}`;
     }
 
